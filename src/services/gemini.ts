@@ -1,7 +1,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ChartConfig, FollowUp } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+const getAI = () => {
+  // Prefer the user-selected API_KEY from the platform dialog, fallback to GEMINI_API_KEY
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY || '';
+  return new GoogleGenAI({ apiKey });
+};
 
 const showChartTool = {
   name: "showChart",
@@ -38,6 +42,7 @@ const showChartTool = {
 };
 
 export async function chatWithGemini(messages: { role: string, content: string }[]) {
+  const ai = getAI();
   const model = "gemini-3-flash-preview";
   
   const systemInstruction = `You are "EduBuddy", a professional and reliable middle/high school teacher. Your goal is to provide students with clear, accurate, and knowledge-rich explanations.
@@ -64,6 +69,7 @@ export async function chatWithGemini(messages: { role: string, content: string }
 }
 
 export async function generateFollowUp(assistantText: string): Promise<FollowUp | null> {
+  const ai = getAI();
   const model = "gemini-3-flash-preview";
   
   const systemInstruction = `You are an "Academic Content Analyst". Your task is to analyze the provided text and derive helpful follow-up items for a student.
@@ -75,10 +81,10 @@ export async function generateFollowUp(assistantText: string): Promise<FollowUp 
      - For chart values, use ONLY pure numbers. Do NOT include units or symbols like '%' in the 'value' field.
      - If no explicit numbers, set chart to null.
   
-  2. WORKFLOW DIAGRAM: Does the text describe a process, cycle, or workflow (e.g., biological process, engineering system, historical timeline)?
+  2. DIAGRAM: Does the text describe a process, cycle, workflow, or system architecture (e.g., biological process, engineering system, historical timeline, software architecture)?
      - If yes, generate Mermaid.js diagram code.
-     - Use simple and clear Mermaid syntax (e.g., graph TD).
-     - If no clear process, set mermaid to null.
+     - Use appropriate Mermaid syntax: 'graph TD' for flowcharts/architecture, 'sequenceDiagram' for interactions, 'classDiagram' for structures, etc.
+     - If no clear process or system, set mermaid to null.
   
   3. SUGGESTED QUESTION: Based on this answer, generate ONE follow-up question that inspires deep thinking.
   

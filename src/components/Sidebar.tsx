@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChatSession } from '../types';
-import { MessageSquare, History, Plus, GraduationCap } from 'lucide-react';
+import { MessageSquare, History, Plus, GraduationCap, Key } from 'lucide-react';
 
 interface SidebarProps {
   sessions: ChatSession[];
@@ -10,6 +10,20 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ sessions, activeSessionId, onSelectSession, onNewChat }) => {
+  const handleSelectKey = async () => {
+    try {
+      // @ts-ignore - aistudio is injected by the platform
+      if (window.aistudio?.openSelectKey) {
+        // @ts-ignore
+        await window.aistudio.openSelectKey();
+      } else {
+        console.error('AI Studio API not available');
+      }
+    } catch (error) {
+      console.error('Error selecting API key:', error);
+    }
+  };
+
   return (
     <div className="w-72 h-full bg-white border-r border-slate-100 flex flex-col">
       <div className="p-6 flex items-center gap-3 text-indigo-600">
@@ -50,7 +64,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ sessions, activeSessionId, onS
         ))}
       </div>
 
-      <div className="p-6 border-t border-slate-100">
+      <div className="p-6 border-t border-slate-100 space-y-4">
+        <button
+          onClick={handleSelectKey}
+          className="w-full flex items-center gap-3 p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all text-xs font-medium"
+        >
+          <Key size={14} />
+          Use My Own API Key
+        </button>
+
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden border border-slate-200">
             <img 

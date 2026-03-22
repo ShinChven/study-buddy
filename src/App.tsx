@@ -93,8 +93,32 @@ export default function App() {
           : s
       ));
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error chatting with Gemini:', error);
+      
+      let errorMessage = "I'm sorry, I encountered an error while processing your request. Please try again later.";
+      
+      // Check for 429 Resource Exhausted error
+      if (error?.status === 429 || error?.message?.includes('429') || error?.message?.includes('RESOURCE_EXHAUSTED')) {
+        errorMessage = "I'm currently receiving too many requests and have reached my rate limit. Please wait a moment and try again.";
+      }
+
+      const errorAssistantMessage: Message = {
+        id: uuidv4(),
+        role: 'assistant',
+        content: errorMessage,
+        timestamp: new Date(),
+      };
+
+      setSessions(prev => prev.map(s => 
+        s.id === activeSessionId 
+          ? { 
+              ...s, 
+              messages: [...updatedMessages, errorAssistantMessage],
+              lastUpdated: new Date() 
+            } 
+          : s
+      ));
     } finally {
       setIsLoading(false);
     }

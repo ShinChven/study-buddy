@@ -126,7 +126,7 @@ export const FollowUpSection: React.FC<FollowUpSectionProps> = ({ followUp, onQu
           >
             <GitBranch size={16} className={isMermaidOpen ? 'text-emerald-600' : 'text-slate-500'} />
             <span className={`text-xs font-semibold ${isMermaidOpen ? 'text-slate-800' : 'text-slate-500'}`}>
-              {followUp.mermaid.title || "Process Diagram"}
+              {followUp.mermaid.title || "Visual Diagram"}
             </span>
             <div className="ml-auto pl-2 text-slate-400">
               {isMermaidOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
