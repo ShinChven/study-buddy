@@ -17,87 +17,78 @@ export const FollowUpSection: React.FC<FollowUpSectionProps> = ({ followUp, onQu
   if (!followUp.chart && !followUp.mermaid && !followUp.suggestedQuestion) return null;
 
   return (
-    <div className="mt-4 space-y-3 w-full max-w-2xl">
-      {/* Chart Section */}
-      {followUp.chart && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div className="mt-2 space-y-1.5 w-full max-w-xl">
+      <div className="flex flex-wrap gap-1.5">
+        {/* Chart Toggle */}
+        {followUp.chart && (
           <button
             onClick={() => setIsChartOpen(!isChartOpen)}
-            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left"
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all text-xs font-semibold ${
+              isChartOpen 
+                ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' 
+                : 'bg-white border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600'
+            }`}
           >
-            <div className="flex items-center gap-3 text-indigo-600">
-              <div className="p-2 bg-indigo-50 rounded-lg">
-                <BarChart2 size={18} />
-              </div>
-              <span className="font-semibold text-slate-800">{followUp.chart.title || "Data Visualization"}</span>
-            </div>
-            {isChartOpen ? <ChevronUp size={20} className="text-slate-400" /> : <ChevronDown size={20} className="text-slate-400" />}
+            <BarChart2 size={12} />
+            <span>{followUp.chart.title || "Chart"}</span>
+            {isChartOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           </button>
-          <AnimatePresence>
-            {isChartOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="px-4 pb-4 overflow-hidden"
-              >
-                <div className="pt-2">
-                  <ChartRenderer config={followUp.chart} />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
+        )}
 
-      {/* Mermaid Section */}
-      {followUp.mermaid && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        {/* Mermaid Toggle */}
+        {followUp.mermaid && (
           <button
             onClick={() => setIsMermaidOpen(!isMermaidOpen)}
-            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left"
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all text-xs font-semibold ${
+              isMermaidOpen 
+                ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
+                : 'bg-white border-slate-200 text-slate-500 hover:border-emerald-300 hover:text-emerald-600'
+            }`}
           >
-            <div className="flex items-center gap-3 text-emerald-600">
-              <div className="p-2 bg-emerald-50 rounded-lg">
-                <GitBranch size={18} />
-              </div>
-              <span className="font-semibold text-slate-800">{followUp.mermaid.title || "Process Diagram"}</span>
-            </div>
-            {isMermaidOpen ? <ChevronUp size={20} className="text-slate-400" /> : <ChevronDown size={20} className="text-slate-400" />}
+            <GitBranch size={12} />
+            <span>{followUp.mermaid.title || "Diagram"}</span>
+            {isMermaidOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           </button>
-          <AnimatePresence>
-            {isMermaidOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="px-4 pb-4 overflow-hidden"
-              >
-                <div className="pt-2">
-                  <MermaidRenderer code={followUp.mermaid.code} />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Suggested Question */}
+      {/* Expanded Content */}
+      <AnimatePresence>
+        {isChartOpen && followUp.chart && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden bg-white rounded-xl border border-slate-100 shadow-sm p-2"
+          >
+            <ChartRenderer config={followUp.chart} />
+          </motion.div>
+        )}
+        {isMermaidOpen && followUp.mermaid && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden bg-white rounded-xl border border-slate-100 shadow-sm p-2"
+          >
+            <MermaidRenderer code={followUp.mermaid.code} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Suggested Question - Compact Chip */}
       {followUp.suggestedQuestion && (
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => onQuestionClick(followUp.suggestedQuestion!)}
-          className="flex items-center gap-3 p-4 bg-indigo-50 text-indigo-700 rounded-2xl border border-indigo-100 hover:bg-indigo-100 transition-all w-full text-left group"
-        >
-          <div className="p-2 bg-white rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-            <MessageSquarePlus size={18} />
+        <div className="flex items-start gap-1.5 pt-0.5">
+          <div className="mt-1 text-slate-300">
+            <MessageSquarePlus size={12} />
           </div>
-          <div className="flex flex-col">
-            <span className="text-xs font-bold uppercase tracking-wider opacity-60">Next Question?</span>
-            <span className="font-medium">{followUp.suggestedQuestion}</span>
-          </div>
-        </motion.button>
+          <button
+            onClick={() => onQuestionClick(followUp.suggestedQuestion!)}
+            className="text-xs text-indigo-500 hover:text-indigo-600 font-medium hover:underline text-left leading-tight"
+          >
+            {followUp.suggestedQuestion}
+          </button>
+        </div>
       )}
     </div>
   );

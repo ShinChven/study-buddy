@@ -52,10 +52,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div className={`flex max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start gap-3`}>
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden ${
                   msg.role === 'user' ? 'bg-indigo-100 text-indigo-600' : 'bg-emerald-100 text-emerald-600'
                 }`}>
-                  {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
+                  <img 
+                    src={msg.role === 'user' 
+                      ? "https://picsum.photos/seed/user123/100/100" 
+                      : "https://picsum.photos/seed/edubuddy/100/100"
+                    } 
+                    alt={msg.role === 'user' ? 'User' : 'EduBuddy'}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
                 </div>
                 <div className="flex flex-col gap-2 w-full">
                   <div className={`p-4 rounded-2xl shadow-sm ${

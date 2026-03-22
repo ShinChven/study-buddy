@@ -52,8 +52,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ sessions, activeSessionId, onS
 
       <div className="p-6 border-t border-slate-100">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold">
-            S
+          <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
+            <img 
+              src="https://picsum.photos/seed/student_main/100/100" 
+              alt="Student Profile"
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-semibold text-slate-800">Student</span>

@@ -26,7 +26,7 @@ export default function App() {
           {
             id: 'welcome-msg',
             role: 'assistant',
-            content: "Hi there! I'm EduBuddy, your learning companion. What would you like to explore today? We can talk about space, animals, math, or anything else you're curious about! 🚀🦁",
+            content: "Hello! I'm EduBuddy, your professional learning assistant. I provide rigorous, accurate, and in-depth explanations. What subject would you like to explore today?",
             timestamp: new Date(),
           }
         ],
@@ -103,12 +103,12 @@ export default function App() {
   const handleNewChat = () => {
     const newSession: ChatSession = {
       id: uuidv4(),
-      title: 'New Lesson',
+      title: 'New Investigation',
       messages: [
         {
           id: uuidv4(),
           role: 'assistant',
-          content: "Ready for a new adventure? What should we learn about now? 🌟",
+          content: "Ready for a new investigation? Please let me know which topic you'd like to dive into.",
           timestamp: new Date(),
         }
       ],
@@ -136,7 +136,14 @@ export default function App() {
           <div className="flex items-center gap-4">
             <div className="flex -space-x-2">
               {[1, 2, 3].map(i => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200" />
+                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 overflow-hidden">
+                  <img 
+                    src={`https://picsum.photos/seed/student${i}/100/100`} 
+                    alt={`Student ${i}`}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
               ))}
             </div>
             <span className="text-xs font-medium text-slate-500">3 Students Online</span>
