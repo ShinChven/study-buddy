@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -13,25 +14,70 @@
 }
 
 .prose p {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
 }
 
 .prose table {
   width: 100%;
-  border-collapse: collapse;
-  margin: 1rem 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1.5rem 0;
   font-size: 0.875rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
 }
 
 .prose th, .prose td {
-  border: 1px solid #e2e8f0;
-  padding: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0.75rem 1rem;
   text-align: left;
 }
 
+.prose tr:last-child td {
+  border-bottom: none;
+}
+
 .prose th {
-  background-color: #f8fafc;
+  background-color: #f1f5f9;
   font-weight: 600;
+  color: #334155;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.prose tbody tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+.prose blockquote {
+  border-left-width: 4px;
+  border-left-color: #818cf8;
+  background-color: #eef2ff;
+  padding: 0.5rem 1rem;
+  margin: 1.5rem 0;
+  border-radius: 0 0.5rem 0.5rem 0;
+  font-style: italic;
+  color: #4f46e5;
+}
+
+.prose blockquote p {
+  margin: 0;
+}
+
+.prose pre {
+  background-color: #1e293b;
+  color: #f8fafc;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+
+.prose code {
+  font-family: var(--font-mono);
 }
 
 .perspective-1000 {

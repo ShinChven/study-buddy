@@ -39,7 +39,11 @@ export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => 
                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                 formatter={(value: any) => [value, 'Value']}
               />
-              <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} animationDuration={1500} />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]} animationDuration={1500}>
+                {config.data.map((_, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         );

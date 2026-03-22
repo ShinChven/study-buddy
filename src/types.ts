@@ -11,11 +11,19 @@ export interface ChartConfig {
   data: ChartData[];
   xAxisLabel?: string;
   yAxisLabel?: string;
+  confidence?: number;
 }
 
 export interface MermaidConfig {
   code: string;
   title: string;
+  confidence?: number;
+}
+
+export interface FollowUpSettings {
+  debugMode: boolean;
+  showSkipped: boolean;
+  threshold: number;
 }
 
 export interface FollowUp {

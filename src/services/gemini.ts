@@ -41,6 +41,33 @@ const showChartTool = {
   }
 };
 
+export async function chatWithGeminiStream(messages: { role: string, content: string }[]) {
+  const ai = getAI();
+  const model = "gemini-3-flash-preview";
+  
+  const systemInstruction = `You are "EduBuddy", a professional and reliable middle/high school teacher. Your goal is to provide students with clear, accurate, and knowledge-rich explanations.
+
+  Guidelines:
+  1. KNOWLEDGE-FOCUSED: Focus on accurate scientific, historical, and technical facts. Avoid overly simplistic language or awkward metaphors.
+  2. DATA-DRIVEN: When answering questions involving quantities, sizes, distances, or statistics, you MUST provide specific numbers and units.
+  3. TEACHER TONE: Maintain a professional, rigorous, and inspiring tone. Explain concepts using clear and accurate terminology, as an excellent teacher would.
+  4. STRUCTURED EXPRESSION: Use Markdown (tables, bullet points, headers) to organize complex information for better readability.
+  5. DEPTH & CLARITY: Maintain depth in knowledge while ensuring it is easy to understand. If multiple data points are involved, prioritize using tables for presentation.`;
+
+  const responseStream = await ai.models.generateContentStream({
+    model,
+    contents: messages.map(m => ({
+      role: m.role === 'user' ? 'user' : 'model',
+      parts: [{ text: m.content }]
+    })),
+    config: {
+      systemInstruction,
+    }
+  });
+
+  return responseStream;
+}
+
 export async function chatWithGemini(messages: { role: string, content: string }[]) {
   const ai = getAI();
   const model = "gemini-3-flash-preview";
@@ -108,6 +135,40 @@ export async function generateFollowUp(assistantText: string): Promise<FollowUp 
 
   try {
     const result = JSON.parse(response.text || '{}');
+    
+    // Reassess the generated items
+    if (result.chart || result.mermaid) {
+      const reassessInstruction = `You are an "Academic Content Reviewer". Your task is to reassess the generated follow-up items (chart and diagram) based on their relevance to the original text.
+      
+      Score each item from 1 to 10, where 10 means it is highly relevant, accurate, and enhances the explanation, and 1 means it is irrelevant or incorrect.
+      
+      Return a JSON object:
+      {
+        "chartConfidence": number | null,
+        "mermaidConfidence": number | null
+      }`;
+
+      const reassessResponse = await ai.models.generateContent({
+        model,
+        contents: [
+          { role: 'user', parts: [{ text: `Original Text:\n${assistantText}\n\nGenerated Items:\n${JSON.stringify({ chart: result.chart, mermaid: result.mermaid })}` }] }
+        ],
+        config: {
+          systemInstruction: reassessInstruction,
+          responseMimeType: "application/json"
+        }
+      });
+
+      const reassessResult = JSON.parse(reassessResponse.text || '{}');
+      
+      if (result.chart && reassessResult.chartConfidence !== undefined) {
+        result.chart.confidence = reassessResult.chartConfidence;
+      }
+      if (result.mermaid && reassessResult.mermaidConfidence !== undefined) {
+        result.mermaid.confidence = reassessResult.mermaidConfidence;
+      }
+    }
+
     return {
       chart: result.chart || undefined,
       mermaid: result.mermaid || undefined,

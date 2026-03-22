@@ -3,20 +3,28 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatWindow } from './components/ChatWindow';
 import { ArtifactPanel } from './components/ArtifactPanel';
-import { Message, ChatSession, ChartConfig } from './types';
-import { chatWithGemini, generateFollowUp } from './services/gemini';
+import { Message, ChatSession, ChartConfig, FollowUpSettings } from './types';
+import { chatWithGeminiStream, generateFollowUp } from './services/gemini';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
   const [sessions, setSessions] = React.useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = React.useState<string>('');
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isGeneratingFollowUp, setIsGeneratingFollowUp] = React.useState(false);
+  const [followUpSettings, setFollowUpSettings] = React.useState<FollowUpSettings>({
+    debugMode: false,
+    showSkipped: true,
+    threshold: 7,
+  });
+  const shouldStopRef = useRef(false);
 
   // Initialize with a default session if none exist
+
   React.useEffect(() => {
     if (sessions.length === 0) {
       const newSession: ChatSession = {
@@ -39,8 +47,14 @@ export default function App() {
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
 
+  const handleStopGeneration = () => {
+    shouldStopRef.current = true;
+  };
+
   const handleSendMessage = async (content: string) => {
     if (!activeSession) return;
+
+    shouldStopRef.current = false;
 
     const userMessage: Message = {
       id: uuidv4(),
@@ -49,49 +63,96 @@ export default function App() {
       timestamp: new Date(),
     };
 
+    const assistantMessageId = uuidv4();
+    const initialAssistantMessage: Message = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+    };
+
     const updatedMessages = [...activeSession.messages, userMessage];
     
-    // Update local state immediately
+    // Update local state immediately with user message and empty assistant message
     setSessions(prev => prev.map(s => 
       s.id === activeSessionId 
-        ? { ...s, messages: updatedMessages, lastUpdated: new Date() } 
+        ? { ...s, messages: [...updatedMessages, initialAssistantMessage], lastUpdated: new Date() } 
         : s
     ));
 
     setIsLoading(true);
 
     try {
-      const response = await chatWithGemini(updatedMessages.map(m => ({
+      const responseStream = await chatWithGeminiStream(updatedMessages.map(m => ({
         role: m.role,
         content: m.content
       })));
 
-      const assistantContent = response.text || "I'm sorry, I couldn't process that. Let's try again! 😊";
+      let assistantContent = '';
+
+      for await (const chunk of responseStream) {
+        if (shouldStopRef.current) {
+          break;
+        }
+        
+        const chunkText = chunk.text || '';
+        assistantContent += chunkText;
+
+        // Update the assistant message content incrementally
+        setSessions(prev => prev.map(s => {
+          if (s.id === activeSessionId) {
+            const newMessages = s.messages.map(m => 
+              m.id === assistantMessageId ? { ...m, content: assistantContent } : m
+            );
+            return { ...s, messages: newMessages, lastUpdated: new Date() };
+          }
+          return s;
+        }));
+      }
+
+      if (!assistantContent) {
+        if (shouldStopRef.current) {
+          assistantContent = "Generation stopped.";
+        } else {
+          assistantContent = "I'm sorry, I couldn't process that. Let's try again! 😊";
+        }
+        setSessions(prev => prev.map(s => {
+          if (s.id === activeSessionId) {
+            const newMessages = s.messages.map(m => 
+              m.id === assistantMessageId ? { ...m, content: assistantContent } : m
+            );
+            return { ...s, messages: newMessages, lastUpdated: new Date() };
+          }
+          return s;
+        }));
+      }
       
-      // Generate follow-up items (Chart, Mermaid, Suggested Question)
-      const followUp = await generateFollowUp(assistantContent);
+      // Generate follow-up items (Chart, Mermaid, Suggested Question) only if not stopped
+      if (!shouldStopRef.current && assistantContent) {
+        setIsGeneratingFollowUp(true);
+        try {
+          const followUp = await generateFollowUp(assistantContent);
 
-      const assistantMessage: Message = {
-        id: uuidv4(),
-        role: 'assistant',
-        content: assistantContent,
-        followUp: followUp || undefined,
-        timestamp: new Date(),
-      };
-
-      const finalMessages = [...updatedMessages, assistantMessage];
-
-      // Update session with assistant message
-      setSessions(prev => prev.map(s => 
-        s.id === activeSessionId 
-          ? { 
-              ...s, 
-              messages: finalMessages,
-              title: s.messages.length === 1 ? content.slice(0, 30) + '...' : s.title,
-              lastUpdated: new Date() 
-            } 
-          : s
-      ));
+          if (!shouldStopRef.current) {
+            setSessions(prev => prev.map(s => {
+              if (s.id === activeSessionId) {
+                const newMessages = s.messages.map(m => 
+                  m.id === assistantMessageId ? { ...m, followUp: followUp || undefined } : m
+                );
+                return { 
+                  ...s, 
+                  messages: newMessages,
+                  title: s.messages.length === 2 ? content.slice(0, 30) + '...' : s.title,
+                  lastUpdated: new Date() 
+                };
+              }
+              return s;
+            }));
+          }
+        } finally {
+          setIsGeneratingFollowUp(false);
+        }
+      }
 
     } catch (error: any) {
       console.error('Error chatting with Gemini:', error);
@@ -103,24 +164,18 @@ export default function App() {
         errorMessage = "I'm currently receiving too many requests and have reached my rate limit. Please wait a moment and try again.";
       }
 
-      const errorAssistantMessage: Message = {
-        id: uuidv4(),
-        role: 'assistant',
-        content: errorMessage,
-        timestamp: new Date(),
-      };
-
-      setSessions(prev => prev.map(s => 
-        s.id === activeSessionId 
-          ? { 
-              ...s, 
-              messages: [...updatedMessages, errorAssistantMessage],
-              lastUpdated: new Date() 
-            } 
-          : s
-      ));
+      setSessions(prev => prev.map(s => {
+        if (s.id === activeSessionId) {
+          const newMessages = s.messages.map(m => 
+            m.id === assistantMessageId ? { ...m, content: errorMessage } : m
+          );
+          return { ...s, messages: newMessages, lastUpdated: new Date() };
+        }
+        return s;
+      }));
     } finally {
       setIsLoading(false);
+      shouldStopRef.current = false;
     }
   };
 
@@ -149,6 +204,8 @@ export default function App() {
         activeSessionId={activeSessionId} 
         onSelectSession={setActiveSessionId}
         onNewChat={handleNewChat}
+        followUpSettings={followUpSettings}
+        onUpdateSettings={setFollowUpSettings}
       />
       
       <main className="flex-1 flex flex-col min-w-0">
@@ -157,21 +214,6 @@ export default function App() {
             <h2 className="font-bold text-slate-800">{activeSession?.title}</h2>
             <p className="text-xs text-slate-400">Personalized Learning Agent</p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex -space-x-2">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 overflow-hidden shadow-sm">
-                  <img 
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=student${i}&backgroundColor=b6e3f4`} 
-                    alt={`Student ${i}`}
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-              ))}
-            </div>
-            <span className="text-xs font-medium text-slate-500">3 Students Online</span>
-          </div>
         </header>
 
         <div className="flex-1 overflow-hidden">
@@ -179,11 +221,17 @@ export default function App() {
             messages={activeSession?.messages || []} 
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
+            isGeneratingFollowUp={isGeneratingFollowUp}
+            followUpSettings={followUpSettings}
+            onStopGeneration={handleStopGeneration}
           />
         </div>
       </main>
 
-      <ArtifactPanel messages={activeSession?.messages || []} />
+      <ArtifactPanel 
+        messages={activeSession?.messages || []} 
+        settings={followUpSettings}
+      />
     </div>
   );
 }
