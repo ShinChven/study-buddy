@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { ChartConfig } from "../types";
+import { ChartConfig, FollowUp } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
@@ -43,9 +43,7 @@ export async function chatWithGemini(messages: { role: string, content: string }
   const systemInstruction = `You are "EduBuddy", a friendly and encouraging tutor for young students. 
   Your goal is to explain complex topics simply and visually. 
   Keep your language simple, use emojis, and be very supportive.
-  Explain things in a way that is easy for kids to understand.
-  
-  When comparing multiple items (like planet sizes, animal speeds, or historical dates), use Markdown tables to make the information clear and scannable.`;
+  Explain things in a way that is easy for kids to understand.`;
 
   const response = await ai.models.generateContent({
     model,
@@ -61,25 +59,32 @@ export async function chatWithGemini(messages: { role: string, content: string }
   return response;
 }
 
-export async function generateChartIfNeeded(assistantText: string) {
+export async function generateFollowUp(assistantText: string): Promise<FollowUp | null> {
   const model = "gemini-3-flash-preview";
   
-  const systemInstruction = `You are a "Data Visualizer". Your job is to analyze the provided text and decide if it contains quantitative data (numbers, sizes, speeds, etc.) that would benefit from a chart.
+  const systemInstruction = `You are a "Learning Companion Analyst". Your job is to analyze the provided text and derive helpful follow-up items for a student.
   
-  RULES:
-  1. If the text contains NO numbers or quantitative comparisons, return exactly: {"needed": false}
-  2. If the text contains numbers/comparisons, return a JSON object with "needed": true and a "chart" object matching the ChartConfig type.
+  You must evaluate three things:
+  1. DATA CHART: Does the text contain EXPLICIT quantitative data (numbers, sizes, speeds) that would benefit from a chart?
+     - ONLY include if there are EXPLICIT NUMBERS.
+     - NEVER invent data or percentages.
+     - If no explicit numbers, set chart to null.
   
-  ChartConfig structure:
+  2. WORKFLOW DIAGRAM: Does the text describe a process, cycle, or workflow (e.g., water cycle, how a car works, historical timeline)?
+     - If yes, generate a Mermaid.js diagram code.
+     - Use simple, clear Mermaid syntax (e.g., graph TD).
+     - If no clear process, set mermaid to null.
+  
+  3. SUGGESTED QUESTION: Generate ONE engaging follow-up question a curious student might ask based on this answer.
+  
+  Return a JSON object:
   {
-    "type": "bar" | "line" | "pie",
-    "title": string,
-    "data": Array<{ "label": string, "value": number }>,
-    "xAxisLabel"?: string,
-    "yAxisLabel"?: string
+    "chart": { "type": "bar" | "line" | "pie", "title": string, "data": Array<{ "label": string, "value": number }>, "xAxisLabel"?: string, "yAxisLabel"?: string } | null,
+    "mermaid": { "code": string, "title": string } | null,
+    "suggestedQuestion": string
   }
   
-  Example: {"needed": true, "chart": {"type": "bar", "title": "Planet Sizes", "data": [{"label": "Earth", "value": 12742}, {"label": "Mars", "value": 6779}]}}`;
+  Titles for charts and mermaid diagrams should be catchy and student-friendly.`;
 
   const response = await ai.models.generateContent({
     model,
@@ -92,41 +97,12 @@ export async function generateChartIfNeeded(assistantText: string) {
 
   try {
     const result = JSON.parse(response.text || '{}');
-    if (result.needed && result.chart) {
-      return result.chart as ChartConfig;
-    }
-    return null;
+    return {
+      chart: result.chart || undefined,
+      mermaid: result.mermaid || undefined,
+      suggestedQuestion: result.suggestedQuestion || undefined
+    };
   } catch (e) {
     return null;
-  }
-}
-
-export async function generateQuickTip(messages: { role: string, content: string }[]) {
-  const model = "gemini-3-flash-preview";
-  
-  const systemInstruction = `You are a "Learning Scout". Your job is to extract one interesting, short, and educational "Quick Tip" or "Did you know?" fact based on the current conversation.
-  The tip should be:
-  1. Very short (max 20 words).
-  2. Fun and engaging for kids.
-  3. Directly related to what was just discussed.
-  4. Formatted as JSON with "content" and "category" fields.
-  Example: {"content": "Cheetahs can go from 0 to 60 mph in just 3 seconds!", "category": "Fun Fact"}`;
-
-  const response = await ai.models.generateContent({
-    model,
-    contents: messages.map(m => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.content }]
-    })),
-    config: {
-      systemInstruction,
-      responseMimeType: "application/json"
-    }
-  });
-
-  try {
-    return JSON.parse(response.text || '{}');
-  } catch (e) {
-    return { content: "Keep exploring to find new tips!", category: "Tip" };
   }
 }

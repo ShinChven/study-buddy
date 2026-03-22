@@ -13,24 +13,28 @@ export interface ChartConfig {
   yAxisLabel?: string;
 }
 
+export interface MermaidConfig {
+  code: string;
+  title: string;
+}
+
+export interface FollowUp {
+  chart?: ChartConfig;
+  mermaid?: MermaidConfig;
+  suggestedQuestion?: string;
+}
+
 export interface Message {
   id: string;
   role: MessageRole;
   content: string;
-  chart?: ChartConfig;
+  followUp?: FollowUp;
   timestamp: Date;
-}
-
-export interface Tip {
-  id: string;
-  content: string;
-  category: string;
 }
 
 export interface ChatSession {
   id: string;
   title: string;
   messages: Message[];
-  tips: Tip[];
   lastUpdated: Date;
 }

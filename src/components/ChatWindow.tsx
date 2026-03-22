@@ -1,6 +1,6 @@
 import React from 'react';
 import { Message, ChartConfig } from '../types';
-import { ChartRenderer } from './ChartRenderer';
+import { FollowUpSection } from './FollowUpSection';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, User, Bot, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -15,10 +15,16 @@ interface ChatWindowProps {
 export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage, isLoading }) => {
   const [input, setInput] = React.useState('');
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const lastMessageRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === 'assistant' && lastMessageRef.current) {
+        lastMessageRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
     }
   }, [messages]);
 
@@ -37,9 +43,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
         className="flex-1 overflow-y-auto p-4 space-y-6 scroll-smooth"
       >
         <AnimatePresence initial={false}>
-          {messages.map((msg) => (
+          {messages.map((msg, idx) => (
             <motion.div
               key={msg.id}
+              ref={idx === messages.length - 1 ? lastMessageRef : null}
               initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20 }}
               animate={{ opacity: 1, x: 0 }}
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -50,7 +57,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
                 }`}>
                   {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 w-full">
                   <div className={`p-4 rounded-2xl shadow-sm ${
                     msg.role === 'user' 
                       ? 'bg-indigo-600 text-white rounded-tr-none' 
@@ -60,7 +67,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                     </div>
                   </div>
-                  {msg.chart && <ChartRenderer config={msg.chart} />}
+                  {msg.followUp && (
+                    <FollowUpSection 
+                      followUp={msg.followUp} 
+                      onQuestionClick={onSendMessage} 
+                    />
+                  )}
                 </div>
               </div>
             </motion.div>

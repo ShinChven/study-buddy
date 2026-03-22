@@ -8,7 +8,7 @@ import { Sidebar } from './components/Sidebar';
 import { ChatWindow } from './components/ChatWindow';
 import { ArtifactPanel } from './components/ArtifactPanel';
 import { Message, ChatSession, ChartConfig } from './types';
-import { chatWithGemini, generateQuickTip, generateChartIfNeeded } from './services/gemini';
+import { chatWithGemini, generateFollowUp } from './services/gemini';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
@@ -29,9 +29,6 @@ export default function App() {
             content: "Hi there! I'm EduBuddy, your learning companion. What would you like to explore today? We can talk about space, animals, math, or anything else you're curious about! 🚀🦁",
             timestamp: new Date(),
           }
-        ],
-        tips: [
-          { id: 'initial-tip', content: "Visualizing data helps your brain remember patterns 40% faster!", category: "Learning Tip" }
         ],
         lastUpdated: new Date(),
       };
@@ -71,14 +68,14 @@ export default function App() {
 
       const assistantContent = response.text || "I'm sorry, I couldn't process that. Let's try again! 😊";
       
-      // Sub-agent 1: Analyze response for quantitative data and generate chart if needed
-      const chart = await generateChartIfNeeded(assistantContent);
+      // Generate follow-up items (Chart, Mermaid, Suggested Question)
+      const followUp = await generateFollowUp(assistantContent);
 
       const assistantMessage: Message = {
         id: uuidv4(),
         role: 'assistant',
         content: assistantContent,
-        chart: chart || undefined,
+        followUp: followUp || undefined,
         timestamp: new Date(),
       };
 
@@ -95,26 +92,6 @@ export default function App() {
             } 
           : s
       ));
-
-      // Sub-agent 2: Generate a quick tip based on the new context
-      const tipData = await generateQuickTip(finalMessages.map(m => ({
-        role: m.role,
-        content: m.content
-      })));
-
-      if (tipData && tipData.content) {
-        const newTip = {
-          id: uuidv4(),
-          content: tipData.content,
-          category: tipData.category || "Did you know?"
-        };
-        
-        setSessions(prev => prev.map(s => 
-          s.id === activeSessionId 
-            ? { ...s, tips: [...s.tips, newTip] } 
-            : s
-        ));
-      }
 
     } catch (error) {
       console.error('Error chatting with Gemini:', error);
@@ -135,7 +112,6 @@ export default function App() {
           timestamp: new Date(),
         }
       ],
-      tips: [],
       lastUpdated: new Date(),
     };
     setSessions(prev => [newSession, ...prev]);
@@ -176,7 +152,7 @@ export default function App() {
         </div>
       </main>
 
-      <ArtifactPanel messages={activeSession?.messages || []} tips={activeSession?.tips || []} />
+      <ArtifactPanel messages={activeSession?.messages || []} />
     </div>
   );
 }
