@@ -76,10 +76,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
                     </div>
                   </div>
                   {msg.followUp && (
-                    <FollowUpSection 
-                      followUp={msg.followUp} 
-                      onQuestionClick={onSendMessage} 
-                    />
+                    <div className="mt-2">
+                      <FollowUpSection 
+                        followUp={msg.followUp} 
+                        onQuestionClick={onSendMessage} 
+                      />
+                    </div>
                   )}
                 </div>
               </div>

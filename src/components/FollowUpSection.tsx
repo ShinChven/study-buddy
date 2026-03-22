@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FollowUp } from '../types';
 import { ChartRenderer } from './ChartRenderer';
 import { MermaidRenderer } from './MermaidRenderer';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, ChevronUp, BarChart2, GitBranch, MessageSquarePlus } from 'lucide-react';
+import { BarChart2, GitBranch, MessageSquarePlus, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface FollowUpSectionProps {
   followUp: FollowUp;
@@ -13,82 +13,160 @@ interface FollowUpSectionProps {
 export const FollowUpSection: React.FC<FollowUpSectionProps> = ({ followUp, onQuestionClick }) => {
   const [isChartOpen, setIsChartOpen] = useState(false);
   const [isMermaidOpen, setIsMermaidOpen] = useState(false);
+  
+  const chartRef = useRef<HTMLDivElement>(null);
+  const mermaidRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isChartOpen && chartRef.current) {
+      // Small delay to allow the expansion animation to start/layout to stabilize
+      setTimeout(() => {
+        const container = chartRef.current?.closest('.overflow-y-auto');
+        if (container && chartRef.current) {
+          const rect = chartRef.current.getBoundingClientRect();
+          const containerRect = container.getBoundingClientRect();
+          const relativeTop = rect.top - containerRect.top + container.scrollTop;
+          
+          container.scrollTo({
+            top: relativeTop - 20, // 20px padding from top
+            behavior: 'smooth'
+          });
+        }
+      }, 150);
+    }
+  }, [isChartOpen]);
+
+  useEffect(() => {
+    if (isMermaidOpen && mermaidRef.current) {
+      setTimeout(() => {
+        const container = mermaidRef.current?.closest('.overflow-y-auto');
+        if (container && mermaidRef.current) {
+          const rect = mermaidRef.current.getBoundingClientRect();
+          const containerRect = container.getBoundingClientRect();
+          const relativeTop = rect.top - containerRect.top + container.scrollTop;
+          
+          container.scrollTo({
+            top: relativeTop - 20,
+            behavior: 'smooth'
+          });
+        }
+      }, 150);
+    }
+  }, [isMermaidOpen]);
 
   if (!followUp.chart && !followUp.mermaid && !followUp.suggestedQuestion) return null;
 
   return (
-    <div className="mt-2 space-y-1.5 w-full max-w-xl">
-      <div className="flex flex-wrap gap-1.5">
-        {/* Chart Toggle */}
-        {followUp.chart && (
-          <button
-            onClick={() => setIsChartOpen(!isChartOpen)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all text-xs font-semibold ${
-              isChartOpen 
-                ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' 
-                : 'bg-white border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600'
-            }`}
+    <div className="mt-4 space-y-3 w-full">
+      {/* Chart Section */}
+      {followUp.chart && (
+        <motion.div 
+          ref={chartRef}
+          layout
+          className={`overflow-hidden transition-all duration-300 border border-slate-100 shadow-sm w-full ${
+            isChartOpen 
+              ? 'bg-white rounded-2xl rounded-tl-none p-4' 
+              : 'bg-white rounded-2xl px-4 py-2 cursor-pointer hover:border-indigo-200 hover:bg-indigo-50/30'
+          }`}
+          onClick={() => !isChartOpen && setIsChartOpen(true)}
+        >
+          <div 
+            className={`flex items-center gap-2 ${isChartOpen ? 'mb-4' : ''}`}
+            onClick={(e) => {
+              if (isChartOpen) {
+                e.stopPropagation();
+                setIsChartOpen(false);
+              }
+            }}
           >
-            <BarChart2 size={12} />
-            <span>{followUp.chart.title || "Chart"}</span>
-            {isChartOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-          </button>
-        )}
-
-        {/* Mermaid Toggle */}
-        {followUp.mermaid && (
-          <button
-            onClick={() => setIsMermaidOpen(!isMermaidOpen)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all text-xs font-semibold ${
-              isMermaidOpen 
-                ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
-                : 'bg-white border-slate-200 text-slate-500 hover:border-emerald-300 hover:text-emerald-600'
-            }`}
-          >
-            <GitBranch size={12} />
-            <span>{followUp.mermaid.title || "Diagram"}</span>
-            {isMermaidOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-          </button>
-        )}
-      </div>
-
-      {/* Expanded Content */}
-      <AnimatePresence>
-        {isChartOpen && followUp.chart && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden bg-white rounded-xl border border-slate-100 shadow-sm p-2"
-          >
-            <ChartRenderer config={followUp.chart} />
-          </motion.div>
-        )}
-        {isMermaidOpen && followUp.mermaid && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden bg-white rounded-xl border border-slate-100 shadow-sm p-2"
-          >
-            <MermaidRenderer code={followUp.mermaid.code} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Suggested Question - Compact Chip */}
-      {followUp.suggestedQuestion && (
-        <div className="flex items-start gap-1.5 pt-0.5">
-          <div className="mt-1 text-slate-300">
-            <MessageSquarePlus size={12} />
+            <BarChart2 size={16} className={isChartOpen ? 'text-indigo-600' : 'text-slate-500'} />
+            <span className={`text-xs font-semibold ${isChartOpen ? 'text-slate-800' : 'text-slate-500'}`}>
+              {followUp.chart.title || "Data Analysis"}
+            </span>
+            <div className="ml-auto pl-2 text-slate-400">
+              {isChartOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
           </div>
+          
+          <AnimatePresence>
+            {isChartOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <ChartRenderer config={followUp.chart} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      )}
+
+      {/* Mermaid Section */}
+      {followUp.mermaid && (
+        <motion.div 
+          ref={mermaidRef}
+          layout
+          className={`overflow-hidden transition-all duration-300 border border-slate-100 shadow-sm w-full ${
+            isMermaidOpen 
+              ? 'bg-white rounded-2xl rounded-tl-none p-4' 
+              : 'bg-white rounded-2xl px-4 py-2 cursor-pointer hover:border-emerald-200 hover:bg-emerald-50/30'
+          }`}
+          onClick={() => !isMermaidOpen && setIsMermaidOpen(true)}
+        >
+          <div 
+            className={`flex items-center gap-2 ${isMermaidOpen ? 'mb-4' : ''}`}
+            onClick={(e) => {
+              if (isMermaidOpen) {
+                e.stopPropagation();
+                setIsMermaidOpen(false);
+              }
+            }}
+          >
+            <GitBranch size={16} className={isMermaidOpen ? 'text-emerald-600' : 'text-slate-500'} />
+            <span className={`text-xs font-semibold ${isMermaidOpen ? 'text-slate-800' : 'text-slate-500'}`}>
+              {followUp.mermaid.title || "Process Diagram"}
+            </span>
+            <div className="ml-auto pl-2 text-slate-400">
+              {isMermaidOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {isMermaidOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="bg-slate-50 rounded-lg p-2 border border-slate-100">
+                  <MermaidRenderer code={followUp.mermaid.code} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      )}
+
+      {/* Suggested Question */}
+      {followUp.suggestedQuestion && (
+        <motion.div
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="pt-1"
+        >
           <button
             onClick={() => onQuestionClick(followUp.suggestedQuestion!)}
-            className="text-xs text-indigo-500 hover:text-indigo-600 font-medium hover:underline text-left leading-tight"
+            className="flex items-start gap-3 bg-white rounded-2xl px-4 py-3 w-full cursor-pointer border border-slate-100 shadow-sm transition-all hover:border-indigo-200 hover:bg-indigo-50/30 group text-left"
           >
-            {followUp.suggestedQuestion}
+            <MessageSquarePlus size={18} className="text-indigo-500 group-hover:text-indigo-600 mt-0.5 shrink-0" />
+            <span className="text-sm font-medium text-slate-600 group-hover:text-indigo-600 leading-relaxed">
+              {followUp.suggestedQuestion}
+            </span>
           </button>
-        </div>
+        </motion.div>
       )}
     </div>
   );
