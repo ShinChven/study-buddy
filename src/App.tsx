@@ -136,9 +136,9 @@ export default function App() {
           <div className="flex items-center gap-4">
             <div className="flex -space-x-2">
               {[1, 2, 3].map(i => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 overflow-hidden">
+                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 overflow-hidden shadow-sm">
                   <img 
-                    src={`https://picsum.photos/seed/student${i}/100/100`} 
+                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=student${i}&backgroundColor=b6e3f4`} 
                     alt={`Student ${i}`}
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"

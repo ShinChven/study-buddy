@@ -52,16 +52,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ sessions, activeSessionId, onS
 
       <div className="p-6 border-t border-slate-100">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
+          <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden border border-slate-200">
             <img 
-              src="https://picsum.photos/seed/student_main/100/100" 
+              src="https://api.dicebear.com/7.x/avataaars/svg?seed=ShinChven@gmail.com&backgroundColor=c0aede" 
               alt="Student Profile"
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
             />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-slate-800">Student</span>
+            <span className="text-sm font-semibold text-slate-800">ShinChven</span>
             <span className="text-xs text-slate-400">Learning Level 1</span>
           </div>
         </div>
