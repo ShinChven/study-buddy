@@ -29,9 +29,15 @@ export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => 
             <BarChart data={config.data}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
               <XAxis dataKey="label" axisLine={false} tickLine={false} />
-              <YAxis axisLine={false} tickLine={false} label={{ value: config.yAxisLabel, angle: -90, position: 'insideLeft' }} />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tickFormatter={(value) => `${value}`}
+                label={{ value: config.yAxisLabel, angle: -90, position: 'insideLeft' }} 
+              />
               <Tooltip 
                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                formatter={(value: any) => [value, 'Value']}
               />
               <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} animationDuration={1500} />
             </BarChart>
@@ -43,9 +49,14 @@ export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => 
             <LineChart data={config.data}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
               <XAxis dataKey="label" axisLine={false} tickLine={false} />
-              <YAxis axisLine={false} tickLine={false} />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tickFormatter={(value) => `${value}`}
+              />
               <Tooltip 
                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                formatter={(value: any) => [value, 'Value']}
               />
               <Line type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={3} dot={{ r: 6 }} animationDuration={1500} />
             </LineChart>
@@ -70,7 +81,9 @@ export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => 
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip 
+                formatter={(value: any) => [value, 'Value']}
+              />
               <Legend />
             </PieChart>
           </ResponsiveContainer>

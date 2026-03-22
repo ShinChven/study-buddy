@@ -72,6 +72,7 @@ export async function generateFollowUp(assistantText: string): Promise<FollowUp 
   1. DATA CHART: Does the text contain explicit quantitative data (numbers, sizes, speeds, statistics)?
      - ONLY include if there are EXPLICIT NUMBERS.
      - NEVER invent data.
+     - For chart values, use ONLY pure numbers. Do NOT include units or symbols like '%' in the 'value' field.
      - If no explicit numbers, set chart to null.
   
   2. WORKFLOW DIAGRAM: Does the text describe a process, cycle, or workflow (e.g., biological process, engineering system, historical timeline)?

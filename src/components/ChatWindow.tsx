@@ -2,9 +2,12 @@ import React from 'react';
 import { Message, ChartConfig } from '../types';
 import { FollowUpSection } from './FollowUpSection';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, User, Bot, Loader2 } from 'lucide-react';
+import { Send, User, Bot, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 interface ChatWindowProps {
   messages: Message[];
@@ -14,8 +17,29 @@ interface ChatWindowProps {
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage, isLoading }) => {
   const [input, setInput] = React.useState('');
+  const [thinkingStep, setThinkingStep] = React.useState(0);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const lastMessageRef = React.useRef<HTMLDivElement>(null);
+
+  const thinkingMessages = [
+    "EduBuddy is analyzing your request...",
+    "Consulting academic databases...",
+    "Synthesizing educational insights...",
+    "Structuring a detailed explanation...",
+    "Preparing interactive visualizations...",
+    "Finalizing the response..."
+  ];
+
+  React.useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isLoading) {
+      setThinkingStep(0);
+      interval = setInterval(() => {
+        setThinkingStep(prev => (prev + 1) % thinkingMessages.length);
+      }, 2500);
+    }
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
   React.useEffect(() => {
     if (messages.length > 0) {
@@ -72,7 +96,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
                       : 'bg-white text-slate-800 rounded-tl-none border border-slate-100'
                   }`}>
                     <div className="prose prose-slate max-w-none prose-sm">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm, remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
                     </div>
                   </div>
                   {msg.followUp && (
@@ -95,8 +124,35 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
             className="flex justify-start"
           >
             <div className="flex items-center gap-3 text-slate-400 italic text-sm ml-12">
-              <Loader2 size={16} className="animate-spin" />
-              EduBuddy is thinking...
+              <motion.div
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 10, -10, 0],
+                  color: ['#818cf8', '#34d399', '#818cf8']
+                }}
+                transition={{ 
+                  duration: 2, 
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+                className="shrink-0"
+              >
+                <Sparkles size={18} />
+              </motion.div>
+              <div className="h-5 overflow-hidden relative w-64">
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={thinkingStep}
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -10, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute inset-0"
+                  >
+                    {thinkingMessages[thinkingStep]}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
             </div>
           </motion.div>
         )}
