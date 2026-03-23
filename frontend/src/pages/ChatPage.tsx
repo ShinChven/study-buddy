@@ -72,7 +72,7 @@ export const ChatPage: React.FC = () => {
     }
   }, [conversation_id, sessions]);
 
-  // Handle initial load / message sending (runs only when conversation_id changes)
+  // Handle initial load / message sending (runs on conversation_id change or when sessions first populate)
   useEffect(() => {
     if (!conversation_id) {
       navigate('/study/new');
@@ -115,7 +115,7 @@ export const ChatPage: React.FC = () => {
 
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversation_id]);
+  }, [conversation_id, sessions]);
 
   const handleDeleteSession = (id: string) => {
     deleteSession(id);
