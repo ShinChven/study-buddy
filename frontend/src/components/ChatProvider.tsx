@@ -108,20 +108,25 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const assistantMessageId = uuidv4();
-    const initialAssistantMessage: Message = {
-      id: assistantMessageId,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-    };
 
     const updatedSession: ChatSession = {
       ...session,
-      messages: [...currentMessages, initialAssistantMessage],
+      messages: [...currentMessages],
       lastUpdated: new Date()
     };
     
     setSessions(prev => prev.map(s => s.id === sessionId ? updatedSession : s));
+
+    let assistantMessageAdded = false;
+    const ensureAssistantMessage = () => {
+      if (!assistantMessageAdded) {
+        assistantMessageAdded = true;
+        setSessions(prev => prev.map(s => s.id === sessionId ? {
+          ...s,
+          messages: [...s.messages, { id: assistantMessageId, role: 'assistant' as const, content: '', timestamp: new Date() }]
+        } : s));
+      }
+    };
 
     try {
       let assistantContent = '';
@@ -132,6 +137,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         content,
         (chunk) => {
           if (stopRefs.current[sessionId]) return;
+          ensureAssistantMessage();
           assistantContent += chunk;
           setSessions(prev => prev.map(s => s.id === sessionId ? {
               ...s,
@@ -140,6 +146,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
         (thinkingChunk) => {
            if (stopRefs.current[sessionId]) return;
+           ensureAssistantMessage();
            assistantReasoning += thinkingChunk;
            setReasoning(prev => ({ ...prev, [sessionId]: assistantReasoning }));
         },

@@ -6,14 +6,14 @@
       "name": "npm run dev",
       "request": "launch",
       "type": "node-terminal",
-      "cwd": "${workspaceFolder}/web"
+      "cwd": "${workspaceFolder}/frontend"
     },
     {
       "name": "Launch Chrome against localhost",
       "type": "chrome",
       "request": "launch",
       "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}/web"
+      "webRoot": "${workspaceFolder}/frontend"
     }
   ]
 }

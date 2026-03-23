@@ -11,7 +11,7 @@ import 'katex/dist/katex.min.css';
 
 interface ChatWindowProps {
   messages: Message[];
-  thinking?: string; // Real-time reasoning chunk
+  reasoning?: string; // Real-time reasoning chunk
   onSendMessage: (content: string) => void;
   onEditMessage: (messageId: string, newContent: string) => void;
   isLoading: boolean;
@@ -102,7 +102,7 @@ const ChatInput = memo(({
 
 ChatInput.displayName = 'ChatInput';
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, thinking, onSendMessage, onEditMessage, isLoading, isGeneratingFollowUp, followUpSettings, onStopGeneration }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, reasoning, onSendMessage, onEditMessage, isLoading, isGeneratingFollowUp, followUpSettings, onStopGeneration }) => {
   const [thinkingStep, setThinkingStep] = React.useState(0);
   const [editingMessageId, setEditingMessageId] = React.useState<string | null>(null);
   const [editContent, setEditContent] = React.useState('');
@@ -186,9 +186,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, thinking, onSe
       >
         <AnimatePresence initial={false}>
           {messages.map((msg, idx) => {
-            if (msg.role === 'assistant' && !msg.content && isLoading && idx === messages.length - 1) {
-              return null;
-            }
             return (
             <motion.div
               key={msg.id}
@@ -216,7 +213,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, thinking, onSe
                 </div>
                 <div className="flex flex-col gap-2 flex-1 min-w-0 w-full">
                   {/* Reasoning/Thinking Panel */}
-                  {idx === messages.length - 1 && msg.role === 'assistant' && thinking && (
+                  {idx === messages.length - 1 && msg.role === 'assistant' && reasoning && (
                     <motion.div 
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -227,7 +224,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, thinking, onSe
                         Reasoning Process
                       </div>
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {thinking}
+                        {reasoning}
                       </ReactMarkdown>
                     </motion.div>
                   )}
@@ -321,7 +318,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, thinking, onSe
             </motion.div>
           )})}
         </AnimatePresence>
-        {isLoading && messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.content && (
+        {isLoading && (!messages.length || messages[messages.length - 1]?.role !== 'assistant' || !messages[messages.length - 1]?.content) && (
           <motion.div 
             id="thinking-indicator"
             initial={{ opacity: 0 }}
