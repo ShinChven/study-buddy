@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useRef, useState, useEffect } from 'react';
 import { Message, ChartConfig, FollowUpSettings } from '../types';
 import { FollowUpSection } from './FollowUpSection';
 import { motion, AnimatePresence } from 'motion/react';
@@ -18,13 +18,94 @@ interface ChatWindowProps {
   onStopGeneration?: () => void;
 }
 
+const ChatInput = memo(({ 
+  onSendMessage, 
+  isLoading, 
+  onStopGeneration 
+}: { 
+  onSendMessage: (content: string) => void, 
+  isLoading: boolean,
+  onStopGeneration?: () => void
+}) => {
+  const [input, setInput] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (input.trim() && !isLoading) {
+      onSendMessage(input);
+      setInput('');
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+  };
+
+  // Sync height after input changes to avoid layout thrashing in onChange
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [input]);
+
+  return (
+    <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+      <form onSubmit={handleSubmit} className="relative max-w-4xl mx-auto flex items-end gap-2">
+        <textarea
+          ref={textareaRef}
+          value={input}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask me anything! Like 'How big are the planets?'"
+          rows={1}
+          className="w-full p-4 pr-14 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-accent-500 transition-all dark:text-slate-100 dark:placeholder-slate-500 resize-none max-h-48 overflow-y-auto"
+        />
+        <div className="flex-shrink-0 mb-1.5">
+          {isLoading ? (
+            <button
+              type="button"
+              onClick={onStopGeneration}
+              className="p-2.5 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition-colors flex items-center justify-center"
+              title="Stop generating"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              </svg>
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!input.trim()}
+              className="p-2.5 bg-accent-600 text-white rounded-xl hover:bg-accent-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <Send size={20} />
+            </button>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+});
+
+ChatInput.displayName = 'ChatInput';
+
 export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage, isLoading, isGeneratingFollowUp, followUpSettings, onStopGeneration }) => {
-  const [input, setInput] = React.useState('');
   const [thinkingStep, setThinkingStep] = React.useState(0);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const lastMessageRef = React.useRef<HTMLDivElement>(null);
   const lastScrolledMessageIdRef = React.useRef<string | null>(null);
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
   const thinkingMessages = [
     "EduBuddy is analyzing your request...",
@@ -78,31 +159,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
 
   const handleQuestionClick = (q: string) => {
     onSendMessage(q);
-  };
-
-  const handleSubmit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (input.trim() && !isLoading) {
-      onSendMessage(input);
-      setInput('');
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
-
-  const adjustHeight = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const target = e.target;
-    target.style.height = 'auto';
-    target.style.height = `${target.scrollHeight}px`;
-    setInput(target.value);
   };
 
   return (
@@ -248,41 +304,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
         )}
       </div>
 
-      <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
-        <form onSubmit={handleSubmit} className="relative max-w-4xl mx-auto flex items-end gap-2">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={adjustHeight}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask me anything! Like 'How big are the planets?'"
-            rows={1}
-            className="w-full p-4 pr-14 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-accent-500 transition-all dark:text-slate-100 dark:placeholder-slate-500 resize-none max-h-48 overflow-y-auto"
-          />
-          <div className="flex-shrink-0 mb-1.5">
-            {isLoading ? (
-              <button
-                type="button"
-                onClick={onStopGeneration}
-                className="p-2.5 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition-colors flex items-center justify-center"
-                title="Stop generating"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                </svg>
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={!input.trim()}
-                className="p-2.5 bg-accent-600 text-white rounded-xl hover:bg-accent-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <Send size={20} />
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
+      <ChatInput 
+        onSendMessage={onSendMessage} 
+        isLoading={isLoading} 
+        onStopGeneration={onStopGeneration} 
+      />
     </div>
   );
 };
+
