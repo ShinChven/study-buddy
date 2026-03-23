@@ -162,21 +162,21 @@ export const ChatPage: React.FC = () => {
       
       <main className="flex-1 flex flex-col min-w-0 w-full relative">
         <header className="h-14 md:h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-4 md:px-8 shrink-0">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
             <button 
-              className="p-2 -ml-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+              className="p-2 -ml-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors shrink-0"
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               title={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
             >
               <Menu size={24} />
             </button>
-            <div className="flex flex-col">
-              <h2 className="font-bold text-slate-800 dark:text-slate-100 truncate max-w-[50vw] md:max-w-[40vw] text-sm md:text-base">{activeSession?.title}</h2>
-              <p className="text-[10px] md:text-xs text-slate-400 dark:text-slate-500">Personalized Learning Agent</p>
+            <div className="flex flex-col min-w-0">
+              <h2 className="font-bold text-slate-800 dark:text-slate-100 truncate text-sm md:text-base" title={activeSession?.title}>{activeSession?.title}</h2>
+              <p className="text-[10px] md:text-xs text-slate-400 dark:text-slate-500 truncate">Personalized Learning Agent</p>
             </div>
           </div>
           <button 
-            className="p-2 -mr-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+            className="p-2 -mr-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors shrink-0"
             onClick={() => setIsArtifactOpen(!isArtifactOpen)}
             title={isArtifactOpen ? "Close artifacts" : "Open artifacts"}
           >
