@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { ChatSession, FollowUpSettings, ThemeSettings, ACCENT_COLORS } from '../types';
-import { MessageSquare, History, Plus, GraduationCap, Moon, Sun, Palette, Settings2, Trash2, AlertCircle, X, ChevronDown, ShieldCheck } from 'lucide-react';
+import { MessageSquare, History, Plus, GraduationCap, Moon, Sun, Palette, Settings2, Trash2, AlertCircle, X, ChevronDown, ShieldCheck, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './AuthProvider';
 import { useNavigate } from 'react-router-dom';
@@ -80,6 +80,65 @@ const DeleteConfirmModal = ({
   );
 };
 
+const LogoutConfirmModal = ({ 
+  isOpen, 
+  onClose, 
+  onConfirm 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onConfirm: () => void; 
+}) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+          />
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 10 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 10 }}
+            className="relative bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200/50 dark:border-slate-800/50 w-full max-w-[320px] overflow-hidden"
+          >
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 bg-amber-50 dark:bg-amber-500/10 text-amber-500 rounded-3xl flex items-center justify-center mx-auto mb-6 transform rotate-12">
+                <LogOut size={40} className="-rotate-12" />
+              </div>
+              <h3 className="text-2xl font-black text-slate-800 dark:text-slate-50 mb-3 tracking-tight">Log Out?</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-8 px-2">
+                Are you sure you want to log out of your session?
+              </p>
+              <div className="flex gap-3 mt-2">
+                <button
+                  onClick={onClose}
+                  className="flex-1 py-3 px-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-[0.98]"
+                >
+                  Stay
+                </button>
+                <button
+                  onClick={() => {
+                    onConfirm();
+                    onClose();
+                  }}
+                  className="flex-1 py-3 px-4 bg-amber-500 text-white font-bold rounded-2xl hover:bg-amber-600 transition-all active:scale-[0.98] shadow-lg shadow-amber-200 dark:shadow-amber-900/20"
+                >
+                  Log Out
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 export const Sidebar: React.FC<SidebarProps> = ({ 
   sessions, 
   activeSessionId, 
@@ -95,7 +154,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
   const [isThemeExpanded, setIsThemeExpanded] = React.useState(false);
-  const { isAdmin } = useAuth();
+  const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
+  const { isAdmin, logout, user } = useAuth();
   const navigate = useNavigate();
   
   const sortedSessions = useMemo(() => {
@@ -321,19 +381,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </AnimatePresence>
           </div>
 
-          <div className="flex items-center gap-3 pt-2">
-            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden border border-slate-200 dark:border-slate-700">
-              <img 
-                src="https://api.dicebear.com/7.x/avataaars/svg?seed=ShinChven@gmail.com&backgroundColor=c0aede" 
-                alt="Student Profile"
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden border border-slate-200 dark:border-slate-700">
+                <img 
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email || 'ShinChven@gmail.com'}&backgroundColor=c0aede`} 
+                  alt="Student Profile"
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{user?.displayName || 'ShinChven'}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500">Learning Level 1</span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">ShinChven</span>
-              <span className="text-xs text-slate-400 dark:text-slate-500">Learning Level 1</span>
-            </div>
+            <button
+              onClick={() => setShowLogoutConfirm(true)}
+              className="p-2 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-xl transition-all"
+              title="Log Out"
+            >
+              <LogOut size={20} />
+            </button>
           </div>
         </div>
       </div>
@@ -343,6 +412,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClose={() => setDeleteId(null)} 
         onConfirm={confirmDelete}
         title={sessionToDelete?.title || ''}
+      />
+
+      <LogoutConfirmModal 
+        isOpen={showLogoutConfirm} 
+        onClose={() => setShowLogoutConfirm(false)} 
+        onConfirm={() => {
+          logout();
+          navigate('/login');
+        }} 
       />
     </>
   );
