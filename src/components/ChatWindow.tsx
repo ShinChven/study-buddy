@@ -24,6 +24,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const lastMessageRef = React.useRef<HTMLDivElement>(null);
   const lastScrolledMessageIdRef = React.useRef<string | null>(null);
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
   const thinkingMessages = [
     "EduBuddy is analyzing your request...",
@@ -79,12 +80,29 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
     onSendMessage(q);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (input.trim() && !isLoading) {
       onSendMessage(input);
       setInput('');
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
     }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
+  const adjustHeight = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const target = e.target;
+    target.style.height = 'auto';
+    target.style.height = `${target.scrollHeight}px`;
+    setInput(target.value);
   };
 
   return (
@@ -231,34 +249,38 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
       </div>
 
       <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
-        <form onSubmit={handleSubmit} className="relative max-w-4xl mx-auto">
-          <input
-            type="text"
+        <form onSubmit={handleSubmit} className="relative max-w-4xl mx-auto flex items-end gap-2">
+          <textarea
+            ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={adjustHeight}
+            onKeyDown={handleKeyDown}
             placeholder="Ask me anything! Like 'How big are the planets?'"
-            className="w-full p-4 pr-14 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-accent-500 transition-all dark:text-slate-100 dark:placeholder-slate-500"
+            rows={1}
+            className="w-full p-4 pr-14 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-accent-500 transition-all dark:text-slate-100 dark:placeholder-slate-500 resize-none max-h-48 overflow-y-auto"
           />
-          {isLoading ? (
-            <button
-              type="button"
-              onClick={onStopGeneration}
-              className="absolute right-2 top-2 p-2 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition-colors flex items-center justify-center"
-              title="Stop generating"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              </svg>
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={!input.trim()}
-              className="absolute right-2 top-2 p-2 bg-accent-600 text-white rounded-xl hover:bg-accent-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <Send size={20} />
-            </button>
-          )}
+          <div className="flex-shrink-0 mb-1.5">
+            {isLoading ? (
+              <button
+                type="button"
+                onClick={onStopGeneration}
+                className="p-2.5 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition-colors flex items-center justify-center"
+                title="Stop generating"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                </svg>
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!input.trim()}
+                className="p-2.5 bg-accent-600 text-white rounded-xl hover:bg-accent-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Send size={20} />
+              </button>
+            )}
+          </div>
         </form>
       </div>
     </div>
