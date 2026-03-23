@@ -88,7 +88,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-50">
+    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950">
       <div 
         ref={scrollRef}
         className="flex-1 overflow-y-auto p-4 pb-[50vh] space-y-6"
@@ -109,7 +109,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
             >
               <div className={`flex max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start gap-3`}>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden border-2 ${
-                  msg.role === 'user' ? 'bg-indigo-50 border-indigo-100' : 'bg-emerald-50 border-emerald-100'
+                  msg.role === 'user' 
+                    ? 'bg-accent-50 dark:bg-accent-900/20 border-accent-100 dark:border-accent-900/30' 
+                    : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/30'
                 }`}>
                   <img 
                     src={msg.role === 'user' 
@@ -124,13 +126,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
                 <div className="flex flex-col gap-2 w-full">
                   <div className={`p-4 rounded-2xl shadow-sm ${
                     msg.role === 'user' 
-                      ? 'bg-indigo-600 text-white rounded-tr-none' 
-                      : 'bg-white text-slate-800 rounded-tl-none border border-slate-100'
+                      ? 'bg-accent-600 text-white rounded-tr-none' 
+                      : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-tl-none border border-slate-100 dark:border-slate-800'
                   }`}>
                     <div className={`prose max-w-none prose-sm ${
                       msg.role === 'user' 
                         ? 'prose-invert prose-p:text-white prose-headings:text-white prose-strong:text-white prose-ul:text-white prose-ol:text-white prose-li:text-white' 
-                        : 'prose-slate prose-p:leading-relaxed prose-headings:font-display prose-headings:font-semibold prose-h1:text-indigo-900 prose-h2:text-indigo-800 prose-h3:text-slate-800 prose-a:text-indigo-600 hover:prose-a:text-indigo-500 prose-strong:text-indigo-900 prose-code:text-indigo-600 prose-code:bg-indigo-50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-img:rounded-xl prose-hr:border-slate-200 prose-ul:list-disc prose-ul:pl-5 prose-ol:list-decimal prose-ol:pl-5 prose-li:my-1'
+                        : 'prose-slate dark:prose-invert prose-p:leading-relaxed prose-headings:font-display prose-headings:font-semibold prose-h1:text-accent-900 dark:prose-h1:text-accent-400 prose-h2:text-accent-800 dark:prose-h2:text-accent-300 prose-h3:text-slate-800 dark:prose-h3:text-slate-100 prose-a:text-accent-600 dark:prose-a:text-accent-400 hover:prose-a:text-accent-500 prose-strong:text-accent-900 dark:prose-strong:text-accent-400 prose-code:text-accent-600 dark:prose-code:text-accent-400 prose-code:bg-accent-50 dark:prose-code:bg-accent-900/30 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-img:rounded-xl prose-hr:border-slate-200 dark:prose-hr:border-slate-700 prose-ul:list-disc prose-ul:pl-5 prose-ol:list-decimal prose-ol:pl-5 prose-li:my-1'
                     }`}>
                       <ReactMarkdown 
                         remarkPlugins={[remarkGfm, remarkMath]}
@@ -153,7 +155,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
                     <motion.div 
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="mt-2 flex items-center gap-2 text-xs text-indigo-500 font-medium bg-indigo-50 self-start px-3 py-1.5 rounded-full"
+                      className="mt-2 flex items-center gap-2 text-xs text-accent-500 font-medium bg-accent-50 dark:bg-accent-900/20 self-start px-3 py-1.5 rounded-full"
                     >
                       <Sparkles size={14} className="animate-pulse" />
                       <span className="animate-pulse">Generating interactive elements...</span>
@@ -171,10 +173,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
             animate={{ opacity: 1 }}
             className="flex justify-start"
           >
-            <div className="flex items-center gap-4 text-slate-500 text-sm ml-12">
+            <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400 text-sm ml-12">
               <div className="relative flex items-center justify-center w-8 h-8">
                 <motion.svg
-                  className="absolute inset-0 w-full h-full text-indigo-500 drop-shadow-sm"
+                  className="absolute inset-0 w-full h-full text-accent-500 drop-shadow-sm"
                   viewBox="0 0 50 50"
                   animate={{ rotate: 360 }}
                   transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -202,7 +204,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
                 <motion.div
                   animate={{ scale: [0.8, 1, 0.8], opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  className="text-indigo-600"
+                  className="text-accent-600 dark:text-accent-400"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 24c0-6.627-5.373-12-12-12 6.627 0 12-5.373 12-12 0 6.627 5.373 12 12 12-6.627 0-12 5.373-12 12z"/>
@@ -217,7 +219,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: -10, opacity: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="absolute inset-0 font-medium bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500"
+                    className="absolute inset-0 font-medium bg-clip-text text-transparent bg-gradient-to-r from-accent-500 to-purple-500"
                   >
                     {thinkingMessages[thinkingStep]}
                   </motion.span>
@@ -228,14 +230,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
         )}
       </div>
 
-      <div className="p-4 bg-white border-t border-slate-100">
+      <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
         <form onSubmit={handleSubmit} className="relative max-w-4xl mx-auto">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask me anything! Like 'How big are the planets?'"
-            className="w-full p-4 pr-14 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+            className="w-full p-4 pr-14 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-accent-500 transition-all dark:text-slate-100 dark:placeholder-slate-500"
           />
           {isLoading ? (
             <button
@@ -252,7 +254,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
             <button
               type="submit"
               disabled={!input.trim()}
-              className="absolute right-2 top-2 p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="absolute right-2 top-2 p-2 bg-accent-600 text-white rounded-xl hover:bg-accent-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Send size={20} />
             </button>

@@ -12,8 +12,10 @@ import { Message, ChatSession, FollowUpSettings } from '../types';
 import { chatWithGeminiStream, generateFollowUp } from '../services/gemini';
 import { getSessions, getSessionById, updateSession } from '../services/storage';
 import { v4 as uuidv4 } from 'uuid';
+import { useTheme } from '../components/ThemeProvider';
 
 export const ChatPage: React.FC = () => {
+  const { theme, updateTheme } = useTheme();
   const { conversation_id } = useParams<{ conversation_id: string }>();
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -189,7 +191,7 @@ export const ChatPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full w-full bg-slate-50 font-sans text-slate-900 overflow-hidden">
+    <div className="flex h-full w-full bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 overflow-hidden">
       <Sidebar 
         sessions={sessions} 
         activeSessionId={conversation_id || ''} 
@@ -197,13 +199,15 @@ export const ChatPage: React.FC = () => {
         onNewChat={handleNewChat}
         followUpSettings={followUpSettings}
         onUpdateSettings={setFollowUpSettings}
+        themeSettings={theme}
+        onUpdateTheme={updateTheme}
       />
       
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-8 shrink-0">
+        <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-8 shrink-0">
           <div className="flex flex-col">
-            <h2 className="font-bold text-slate-800">{activeSession?.title}</h2>
-            <p className="text-xs text-slate-400">Personalized Learning Agent</p>
+            <h2 className="font-bold text-slate-800 dark:text-slate-100">{activeSession?.title}</h2>
+            <p className="text-xs text-slate-400 dark:text-slate-500">Personalized Learning Agent</p>
           </div>
         </header>
 

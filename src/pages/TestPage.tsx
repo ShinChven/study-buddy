@@ -55,7 +55,7 @@ export const TestPage: React.FC = () => {
           <p className="text-slate-500 mb-8">You need to collect some flip cards by chatting with EduBuddy first!</p>
           <button 
             onClick={onClose}
-            className="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
+            className="px-6 py-3 bg-accent-600 text-white font-semibold rounded-xl hover:bg-accent-700 transition-colors"
           >
             Go Back to Chat
           </button>
@@ -97,7 +97,7 @@ export const TestPage: React.FC = () => {
   return (
     <div className="absolute inset-0 z-50 bg-slate-50 flex flex-col">
       <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
-        <div className="flex items-center gap-3 text-indigo-600 font-bold">
+        <div className="flex items-center gap-3 text-accent-600 font-bold">
           <Trophy size={24} />
           <h1 className="text-xl">Knowledge Test</h1>
         </div>
@@ -119,8 +119,8 @@ export const TestPage: React.FC = () => {
               exit={{ opacity: 0, x: -20 }}
               className="max-w-2xl w-full bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden"
             >
-              <div className="bg-indigo-50 p-6 border-b border-indigo-100">
-                <div className="flex justify-between items-center mb-4 text-sm font-semibold text-indigo-600 uppercase tracking-wider">
+              <div className="bg-accent-50 p-6 border-b border-accent-100">
+                <div className="flex justify-between items-center mb-4 text-sm font-semibold text-accent-600 uppercase tracking-wider">
                   <span>Question {currentIndex + 1} of {flipCards.length}</span>
                   <span>{currentCard.title}</span>
                 </div>
@@ -134,7 +134,7 @@ export const TestPage: React.FC = () => {
                   const isSelected = selectedOption === idx;
                   const isCorrect = idx === currentCard.correctAnswerIndex;
                   
-                  let optionClass = "border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 text-slate-700";
+                  let optionClass = "border-slate-200 hover:border-accent-300 hover:bg-accent-50 text-slate-700";
                   let icon = null;
 
                   if (isAnswered) {
@@ -178,7 +178,7 @@ export const TestPage: React.FC = () => {
                   
                   <button 
                     onClick={handleNext}
-                    className="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-accent-600 text-white font-bold rounded-xl hover:bg-accent-700 transition-colors flex items-center justify-center gap-2"
                   >
                     {currentIndex < flipCards.length - 1 ? 'Next Question' : 'See Results'}
                     <ArrowRight size={20} />
@@ -193,27 +193,27 @@ export const TestPage: React.FC = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="max-w-md w-full bg-white rounded-3xl shadow-sm border border-slate-200 p-8 text-center"
             >
-              <div className="w-24 h-24 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="w-24 h-24 bg-accent-100 text-accent-600 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Trophy size={48} />
               </div>
               <h2 className="text-3xl font-bold text-slate-800 mb-2">Test Complete!</h2>
               <p className="text-slate-500 mb-8">You answered {score} out of {flipCards.length} questions correctly.</p>
               
-              <div className="text-6xl font-black text-indigo-600 mb-8">
+              <div className="text-6xl font-black text-accent-600 mb-8">
                 {Math.round((score / flipCards.length) * 100)}%
               </div>
 
               <div className="flex flex-col gap-3">
                 <button 
                   onClick={handleRestart}
-                  className="w-full py-3 bg-indigo-50 text-indigo-700 font-bold rounded-xl hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-accent-50 text-accent-700 font-bold rounded-xl hover:bg-accent-100 transition-colors flex items-center justify-center gap-2"
                 >
                   <RotateCcw size={20} />
                   Retake Test
                 </button>
                 <button 
                   onClick={onClose}
-                  className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors"
+                  className="w-full py-3 bg-accent-600 text-white font-bold rounded-xl hover:bg-accent-700 transition-colors"
                 >
                   Back to Chat
                 </button>

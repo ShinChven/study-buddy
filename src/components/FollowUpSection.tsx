@@ -49,12 +49,12 @@ export const FollowUpSection: React.FC<FollowUpSectionProps> = ({ followUp, onQu
           layout
           className={`overflow-hidden transition-all duration-300 border shadow-sm w-full ${
             followUp.chart.confidence !== undefined && followUp.chart.confidence < settings.threshold
-              ? 'border-red-200 opacity-70 grayscale'
-              : 'border-slate-100'
+              ? 'border-red-200 dark:border-red-900/30 opacity-70 grayscale'
+              : 'border-slate-100 dark:border-slate-800'
           } ${
             isChartOpen 
-              ? 'bg-white rounded-2xl rounded-tl-none p-4' 
-              : 'bg-white rounded-2xl px-4 py-2 cursor-pointer hover:border-indigo-200 hover:bg-indigo-50/30'
+              ? 'bg-white dark:bg-slate-900 rounded-2xl rounded-tl-none p-4' 
+              : 'bg-white dark:bg-slate-900 rounded-2xl px-4 py-2 cursor-pointer hover:border-accent-200 hover:bg-accent-50/30 dark:hover:bg-accent-900/10'
           }`}
           onClick={() => !isChartOpen && setIsChartOpen(true)}
         >
@@ -67,8 +67,8 @@ export const FollowUpSection: React.FC<FollowUpSectionProps> = ({ followUp, onQu
               }
             }}
           >
-            <BarChart2 size={16} className={isChartOpen ? 'text-indigo-600' : 'text-slate-500'} />
-            <span className={`text-xs font-semibold ${isChartOpen ? 'text-slate-800' : 'text-slate-500'}`}>
+            <BarChart2 size={16} className={isChartOpen ? 'text-accent-600' : 'text-slate-500 dark:text-slate-400'} />
+            <span className={`text-xs font-semibold ${isChartOpen ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
               {followUp.chart.title || "Data Analysis"}
             </span>
             {settings.debugMode && followUp.chart.confidence !== undefined && (
@@ -92,7 +92,7 @@ export const FollowUpSection: React.FC<FollowUpSectionProps> = ({ followUp, onQu
                 className="overflow-hidden"
               >
                 {followUp.chart.confidence !== undefined && followUp.chart.confidence < settings.threshold && (
-                  <div className="mb-3 p-2 bg-red-50 text-red-600 text-xs rounded-lg flex items-center gap-2">
+                  <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs rounded-lg flex items-center gap-2">
                     <AlertTriangle size={14} />
                     This chart was skipped because its confidence score ({followUp.chart.confidence}) is below the threshold ({settings.threshold}).
                   </div>
@@ -111,12 +111,12 @@ export const FollowUpSection: React.FC<FollowUpSectionProps> = ({ followUp, onQu
           layout
           className={`overflow-hidden transition-all duration-300 border shadow-sm w-full ${
             followUp.mermaid.confidence !== undefined && followUp.mermaid.confidence < settings.threshold
-              ? 'border-red-200 opacity-70 grayscale'
-              : 'border-slate-100'
+              ? 'border-red-200 dark:border-red-900/30 opacity-70 grayscale'
+              : 'border-slate-100 dark:border-slate-800'
           } ${
             isMermaidOpen 
-              ? 'bg-white rounded-2xl rounded-tl-none p-4' 
-              : 'bg-white rounded-2xl px-4 py-2 cursor-pointer hover:border-emerald-200 hover:bg-emerald-50/30'
+              ? 'bg-white dark:bg-slate-900 rounded-2xl rounded-tl-none p-4' 
+              : 'bg-white dark:bg-slate-900 rounded-2xl px-4 py-2 cursor-pointer hover:border-emerald-200 hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10'
           }`}
           onClick={() => !isMermaidOpen && setIsMermaidOpen(true)}
         >
@@ -129,8 +129,8 @@ export const FollowUpSection: React.FC<FollowUpSectionProps> = ({ followUp, onQu
               }
             }}
           >
-            <GitBranch size={16} className={isMermaidOpen ? 'text-emerald-600' : 'text-slate-500'} />
-            <span className={`text-xs font-semibold ${isMermaidOpen ? 'text-slate-800' : 'text-slate-500'}`}>
+            <GitBranch size={16} className={isMermaidOpen ? 'text-emerald-600' : 'text-slate-500 dark:text-slate-400'} />
+            <span className={`text-xs font-semibold ${isMermaidOpen ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
               {followUp.mermaid.title || "Visual Diagram"}
             </span>
             {settings.debugMode && followUp.mermaid.confidence !== undefined && (
@@ -154,12 +154,12 @@ export const FollowUpSection: React.FC<FollowUpSectionProps> = ({ followUp, onQu
                 className="overflow-hidden"
               >
                 {followUp.mermaid.confidence !== undefined && followUp.mermaid.confidence < settings.threshold && (
-                  <div className="mb-3 p-2 bg-red-50 text-red-600 text-xs rounded-lg flex items-center gap-2">
+                  <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs rounded-lg flex items-center gap-2">
                     <AlertTriangle size={14} />
                     This diagram was skipped because its confidence score ({followUp.mermaid.confidence}) is below the threshold ({settings.threshold}).
                   </div>
                 )}
-                <div className="bg-slate-50 rounded-lg p-2 border border-slate-100">
+                <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-2 border border-slate-100 dark:border-slate-800">
                   <MermaidRenderer code={followUp.mermaid.code} />
                 </div>
               </motion.div>
@@ -177,10 +177,10 @@ export const FollowUpSection: React.FC<FollowUpSectionProps> = ({ followUp, onQu
         >
           <button
             onClick={() => onQuestionClick(followUp.suggestedQuestion!)}
-            className="flex items-start gap-3 bg-white rounded-2xl px-4 py-3 w-full cursor-pointer border border-slate-100 shadow-sm transition-all hover:border-indigo-200 hover:bg-indigo-50/30 group text-left"
+            className="flex items-start gap-3 bg-white dark:bg-slate-900 rounded-2xl px-4 py-3 w-full cursor-pointer border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:border-accent-200 hover:bg-accent-50/30 dark:hover:bg-accent-900/10 group text-left"
           >
-            <MessageSquarePlus size={18} className="text-indigo-500 group-hover:text-indigo-600 mt-0.5 shrink-0" />
-            <span className="text-sm font-medium text-slate-600 group-hover:text-indigo-600 leading-relaxed">
+            <MessageSquarePlus size={18} className="text-accent-500 group-hover:text-accent-600 mt-0.5 shrink-0" />
+            <span className="text-sm font-medium text-slate-600 dark:text-slate-300 group-hover:text-accent-600 leading-relaxed">
               {followUp.suggestedQuestion}
             </span>
           </button>

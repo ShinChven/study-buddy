@@ -5,8 +5,10 @@ import { Send, Sparkles } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatSession, FollowUpSettings } from '../types';
 import { getSessions, updateSession } from '../services/storage';
+import { useTheme } from '../components/ThemeProvider';
 
 export const NewChatPage: React.FC = () => {
+  const { theme, updateTheme } = useTheme();
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [input, setInput] = useState('');
@@ -49,7 +51,7 @@ export const NewChatPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full w-full bg-slate-50 font-sans text-slate-900 overflow-hidden">
+    <div className="flex h-full w-full bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 overflow-hidden">
       <Sidebar 
         sessions={sessions} 
         activeSessionId="" 
@@ -57,19 +59,21 @@ export const NewChatPage: React.FC = () => {
         onNewChat={handleNewChat}
         followUpSettings={followUpSettings}
         onUpdateSettings={setFollowUpSettings}
+        themeSettings={theme}
+        onUpdateTheme={updateTheme}
       />
       
-      <main className="flex-1 flex flex-col items-center justify-center p-8 bg-white relative overflow-hidden">
+      <main className="flex-1 flex flex-col items-center justify-center p-8 bg-white dark:bg-slate-900 relative overflow-hidden">
         {/* Decorative elements */}
-        <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-indigo-50 rounded-full blur-3xl opacity-50" />
-        <div className="absolute bottom-[-10%] left-[-5%] w-96 h-96 bg-slate-50 rounded-full blur-3xl opacity-50" />
+        <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-accent-50 dark:bg-accent-900/10 rounded-full blur-3xl opacity-50" />
+        <div className="absolute bottom-[-10%] left-[-5%] w-96 h-96 bg-slate-50 dark:bg-slate-800/10 rounded-full blur-3xl opacity-50" />
 
         <div className="max-w-2xl w-full text-center relative z-10 space-y-8">
           <div className="space-y-2">
-            <h1 className="text-5xl font-black text-slate-800 tracking-tight">
-              What do you want to <span className="text-indigo-600">learn</span> today?
+            <h1 className="text-5xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
+              What do you want to <span className="text-accent-600 dark:text-accent-400">learn</span> today?
             </h1>
-            <p className="text-slate-500 text-lg font-medium">
+            <p className="text-slate-500 dark:text-slate-400 text-lg font-medium">
               Start a new investigation with EduBuddy
             </p>
           </div>
@@ -80,13 +84,13 @@ export const NewChatPage: React.FC = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask anything... (e.g., Explain Quantum Entanglement)"
-              className="w-full px-8 py-6 pr-20 bg-white border-2 border-slate-100 rounded-[2rem] shadow-2xl shadow-slate-100 text-lg focus:outline-none focus:border-indigo-500 transition-all group-hover:border-slate-200"
+              className="w-full px-8 py-6 pr-20 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-[2rem] shadow-2xl shadow-slate-100 dark:shadow-none text-lg focus:outline-none focus:border-accent-500 transition-all group-hover:border-slate-200 dark:group-hover:border-slate-600"
               autoFocus
             />
             <button 
               type="submit"
               disabled={!input.trim()}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-4 bg-indigo-600 text-white rounded-[1.5rem] hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50 disabled:shadow-none"
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-4 bg-accent-600 text-white rounded-[1.5rem] hover:bg-accent-700 transition-all shadow-lg shadow-accent-200 disabled:opacity-50 disabled:shadow-none"
             >
               <Send size={24} />
             </button>
@@ -97,7 +101,7 @@ export const NewChatPage: React.FC = () => {
               <button 
                 key={topic}
                 onClick={() => setInput(topic)}
-                className="px-6 py-2 bg-slate-50 border border-slate-100 text-slate-600 rounded-full text-sm font-bold hover:bg-indigo-50 hover:border-indigo-100 hover:text-indigo-600 transition-all flex items-center gap-2"
+                className="px-6 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-full text-sm font-bold hover:bg-accent-50 dark:hover:bg-accent-900/30 hover:border-accent-100 dark:hover:border-accent-800 hover:text-accent-600 dark:hover:text-accent-400 transition-all flex items-center gap-2"
               >
                 <Sparkles size={14} />
                 {topic}
