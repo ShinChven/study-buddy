@@ -15,10 +15,20 @@ public class EduBuddyDbContext : IdentityDbContext<User, IdentityRole<Guid>, Gui
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<Artifact> Artifacts => Set<Artifact>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
+    public DbSet<UsageLog> UsageLogs => Set<UsageLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // UsageLog relationships
+        modelBuilder.Entity<UsageLog>(entity =>
+        {
+            entity.HasOne(l => l.User)
+                .WithMany()
+                .HasForeignKey(l => l.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
         // User Preferences as JSONB
         modelBuilder.Entity<User>(entity =>

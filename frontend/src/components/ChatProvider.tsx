@@ -7,6 +7,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { v4 as uuidv4 } from 'uuid';
 import { Message, ChatSession, FollowUp } from '../types';
 import { chatWithGeminiStream, generateFollowUp } from '../services/gemini';
+import { apiService } from '../services/api';
 import { getSessions, updateSession as saveSession, deleteSession as removeSession, getSessionById } from '../services/storage';
 
 interface ChatContextType {
@@ -21,6 +22,8 @@ interface ChatContextType {
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
+
+const USE_BACKEND = import.meta.env.VITE_USE_BACKEND === 'true';
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -86,31 +89,56 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateSession(updatedSession);
 
     try {
-      const responseStream = await chatWithGeminiStream(currentMessages.map(m => ({
-        role: m.role,
-        content: m.content
-      })));
-
       let assistantContent = '';
 
-      for await (const chunk of responseStream) {
-        if (stopRefs.current[sessionId]) {
-          break;
-        }
-        
-        const chunkText = chunk.text || '';
-        assistantContent += chunkText;
+      if (USE_BACKEND) {
+        await apiService.sendMessage(
+          sessionId,
+          content,
+          (chunk) => {
+            if (stopRefs.current[sessionId]) return;
+            assistantContent += chunk;
+            const incrementalSession: ChatSession = {
+              ...updatedSession,
+              messages: updatedSession.messages.map(m => 
+                m.id === assistantMessageId ? { ...m, content: assistantContent } : m
+              ),
+              lastUpdated: new Date()
+            };
+            saveSession(incrementalSession);
+            setSessions(getSessions());
+          },
+          (messageId) => {
+             // Success
+          },
+          (error) => {
+             throw new Error(error);
+          }
+        );
+      } else {
+        const responseStream = await chatWithGeminiStream(currentMessages.map(m => ({
+          role: m.role,
+          content: m.content
+        })));
 
-        // Update session in storage and state incrementally
-        const incrementalSession: ChatSession = {
-            ...updatedSession,
-            messages: updatedSession.messages.map(m => 
-              m.id === assistantMessageId ? { ...m, content: assistantContent } : m
-            ),
-            lastUpdated: new Date()
-        };
-        saveSession(incrementalSession);
-        setSessions(getSessions());
+        for await (const chunk of responseStream) {
+          if (stopRefs.current[sessionId]) {
+            break;
+          }
+          
+          const chunkText = chunk.text || '';
+          assistantContent += chunkText;
+
+          const incrementalSession: ChatSession = {
+              ...updatedSession,
+              messages: updatedSession.messages.map(m => 
+                m.id === assistantMessageId ? { ...m, content: assistantContent } : m
+              ),
+              lastUpdated: new Date()
+          };
+          saveSession(incrementalSession);
+          setSessions(getSessions());
+        }
       }
 
       const finalAssistantContent = assistantContent || (stopRefs.current[sessionId] ? "Generation stopped." : "I'm sorry, I couldn't process that. Let's try again! 😊");
