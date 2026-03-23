@@ -61,9 +61,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshSessions();
   }, [refreshSessions]);
 
-  const deleteSession = useCallback((id: string) => {
-    // TODO: Implement backend delete endpoint call
-    refreshSessions();
+  const deleteSession = useCallback(async (id: string) => {
+    try {
+      await apiService.deleteConversation(id);
+      await refreshSessions();
+    } catch (err) {
+      console.error("Failed to delete session", err);
+    }
   }, [refreshSessions]);
 
   const loadThread = useCallback(async (sessionId: string) => {

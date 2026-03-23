@@ -112,6 +112,14 @@ class ApiService {
         return res.json();
     }
 
+    async deleteConversation(conversationId: string) {
+        const res = await fetch(`${API_URL}/api/conversation/${conversationId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${this.token}` }
+        });
+        if (!res.ok) throw new Error("Failed to delete conversation");
+    }
+
     async getThread(conversationId: string) {
         const res = await fetch(`${API_URL}/api/conversation/${conversationId}/thread`, {
             headers: { 'Authorization': `Bearer ${this.token}` }

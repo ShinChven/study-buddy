@@ -33,41 +33,41 @@ const DeleteConfirmModal = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
           />
           <motion.div
-            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            initial={{ scale: 0.9, opacity: 0, y: 10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-sm overflow-hidden"
+            exit={{ scale: 0.9, opacity: 0, y: 10 }}
+            className="relative bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-200/50 dark:border-slate-800/50 w-full max-w-[320px] overflow-hidden"
           >
-            <div className="p-6 text-center">
-              <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertCircle size={32} />
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-6 transform rotate-12">
+                <Trash2 size={40} className="-rotate-12" />
               </div>
-              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Delete Conversation?</h3>
-              <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
-                Are you sure you want to delete <span className="font-semibold text-slate-700 dark:text-slate-200">"{title}"</span>? This action cannot be undone.
+              <h3 className="text-2xl font-black text-slate-800 dark:text-slate-50 mb-3 tracking-tight">Delete Chat?</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-8 px-2">
+                This will permanently remove <span className="font-bold text-slate-900 dark:text-slate-200">"{title}"</span> and all its progress.
               </p>
-              <div className="flex gap-3">
+              <div className="flex gap-3 mt-2">
                 <button
                   onClick={onClose}
-                  className="flex-1 py-3 px-4 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  className="flex-1 py-3 px-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-[0.98]"
                 >
-                  Cancel
+                  Keep
                 </button>
                 <button
                   onClick={() => {
                     onConfirm();
                     onClose();
                   }}
-                  className="flex-1 py-3 px-4 bg-rose-500 text-white font-bold rounded-2xl hover:bg-rose-600 transition-colors shadow-lg shadow-rose-200 dark:shadow-none"
+                  className="flex-1 py-3 px-4 bg-rose-500 text-white font-bold rounded-2xl hover:bg-rose-600 transition-all active:scale-[0.98] shadow-lg shadow-rose-200 dark:shadow-rose-900/20"
                 >
                   Delete
                 </button>
@@ -184,12 +184,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ))}
         </div>
 
-        <DeleteConfirmModal 
-          isOpen={!!deleteId} 
-          onClose={() => setDeleteId(null)} 
-          onConfirm={confirmDelete}
-          title={sessionToDelete?.title || ''}
-        />
 
         <div className="p-4 md:p-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
           {isAdmin && (
@@ -335,6 +329,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
       </div>
+
+      <DeleteConfirmModal 
+        isOpen={!!deleteId} 
+        onClose={() => setDeleteId(null)} 
+        onConfirm={confirmDelete}
+        title={sessionToDelete?.title || ''}
+      />
     </>
   );
 };

@@ -13,4 +13,5 @@ public interface IConversationService
     Task<List<Conversation>> GetUserConversationsAsync(Guid userId);
     Task<Conversation> CreateConversationAsync(Guid userId, string title);
     Task SyncConversationsAsync(Guid userId, List<SyncConversationRequest> requests);
+    Task DeleteConversationAsync(Guid conversationId, Guid userId);
 }
