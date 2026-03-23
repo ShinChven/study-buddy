@@ -43,7 +43,16 @@ public class ConversationController : ControllerBase
         if (conversation == null) return NotFound();
 
         var thread = await _conversationService.GetThreadAsync(id, messageId);
-        return Ok(thread);
+        var result = thread.Select(m => new
+        {
+            m.Id,
+            m.ConversationId,
+            Role = (int)m.Role,
+            m.Content,
+            m.CreatedAt,
+            m.ParentMessageId
+        });
+        return Ok(result);
     }
 
     [HttpPost]

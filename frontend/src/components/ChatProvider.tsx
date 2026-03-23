@@ -19,6 +19,7 @@ interface ChatContextType {
   deleteSession: (id: string) => void;
   updateSession: (session: ChatSession) => void;
   refreshSessions: () => void;
+  loadThread: (sessionId: string) => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -64,6 +65,24 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // TODO: Implement backend delete endpoint call
     refreshSessions();
   }, [refreshSessions]);
+
+  const loadThread = useCallback(async (sessionId: string) => {
+    try {
+      const thread = await apiService.getThread(sessionId);
+      const messages: Message[] = thread.map((m: any) => ({
+        id: m.id,
+        role: m.role === 0 ? 'user' : 'assistant',
+        content: m.content,
+        timestamp: new Date(m.createdAt)
+      }));
+      setSessions(prev => prev.map(s => s.id === sessionId ? {
+        ...s,
+        messages
+      } : s));
+    } catch (err) {
+      console.error('Failed to load thread', err);
+    }
+  }, []);
 
   const sendMessage = useCallback(async (sessionId: string, content: string, isAuto = false) => {
     let session = sessions.find(s => s.id === sessionId);
@@ -193,7 +212,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         stopGeneration, 
         deleteSession, 
         updateSession,
-        refreshSessions
+        refreshSessions,
+        loadThread
     }}>
       {children}
     </ChatContext.Provider>

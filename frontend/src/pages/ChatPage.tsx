@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { ChatWindow } from '../components/ChatWindow';
@@ -27,10 +27,12 @@ export const ChatPage: React.FC = () => {
     sendMessage, 
     stopGeneration, 
     deleteSession, 
-    updateSession 
+    updateSession,
+    loadThread 
   } = useChat();
   
   const [activeSession, setActiveSession] = useState<ChatSession | null>(null);
+  const sentRef = useRef<Record<string, boolean>>({});
   const [followUpSettings, setFollowUpSettings] = useState<FollowUpSettings>({
     debugMode: false,
     showSkipped: true,
@@ -60,35 +62,60 @@ export const ChatPage: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, [isSidebarOpen, isArtifactOpen]);
 
-  // Sync active session with URL parameter and sessions from provider
+  // Keep active session in sync with sessions list (runs on every sessions update)
   useEffect(() => {
     if (conversation_id) {
       const session = sessions.find(s => s.id === conversation_id);
       if (session) {
         setActiveSession(session);
-        
-        // Handle initial message from NewChatPage
-        const initialMessage = (location.state as any)?.initialMessage;
-        if (initialMessage && session.messages.length === 0 && !isGenerating[conversation_id]) {
-            // Clear state to avoid re-triggering on refreshes
-            navigate(location.pathname, { replace: true, state: {} });
-            sendMessage(conversation_id, initialMessage);
-        } else {
-            // Start generation if the last message is from user (and it's the only one, meaning it's a new or fresh user input)
-            const lastMessage = session.messages[session.messages.length - 1];
-            if (lastMessage && lastMessage.role === 'user' && session.messages.length === 1 && !isGenerating[conversation_id]) {
-              sendMessage(conversation_id, lastMessage.content, true);
-            }
-        }
-      } else {
+      }
+    }
+  }, [conversation_id, sessions]);
+
+  // Handle initial load / message sending (runs only when conversation_id changes)
+  useEffect(() => {
+    if (!conversation_id) {
+      navigate('/study/new');
+      return;
+    }
+
+    // Reset sent tracking when conversation changes
+    const alreadySent = sentRef.current[conversation_id];
+
+    const init = async () => {
+      const session = sessions.find(s => s.id === conversation_id);
+
+      if (!session) {
         if (sessions.length > 0) {
-            navigate('/study/new');
+          navigate('/study/new');
+        }
+        return;
+      }
+
+      // Handle initial message from NewChatPage
+      const initialMessage = (location.state as any)?.initialMessage;
+      if (initialMessage && !alreadySent) {
+        sentRef.current[conversation_id] = true;
+        // Clear state to avoid re-triggering on refreshes
+        navigate(location.pathname, { replace: true, state: {} });
+        sendMessage(conversation_id, initialMessage);
+      } else if (session.messages.length === 0 && !alreadySent) {
+        sentRef.current[conversation_id] = true;
+        // Page refresh: load thread from backend
+        loadThread(conversation_id);
+      } else if (!alreadySent) {
+        // Start generation if the last message is from user (new user input)
+        const lastMessage = session.messages[session.messages.length - 1];
+        if (lastMessage && lastMessage.role === 'user' && session.messages.length === 1) {
+          sentRef.current[conversation_id] = true;
+          sendMessage(conversation_id, lastMessage.content, true);
         }
       }
-    } else {
-      navigate('/study/new');
-    }
-  }, [conversation_id, sessions, navigate, isGenerating, sendMessage, location]);
+    };
+
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation_id]);
 
   const handleDeleteSession = (id: string) => {
     deleteSession(id);

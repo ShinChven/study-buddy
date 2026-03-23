@@ -44,6 +44,9 @@ class ApiService {
         try {
             await this.startConnection();
             
+            // Clear any stale handlers before registering new ones
+            this.off();
+
             this.connection?.on("ReceiveChunk", onChunk);
             this.connection?.on("ReceiveThinking", onThinking);
             this.connection?.on("Finished", (id) => {
