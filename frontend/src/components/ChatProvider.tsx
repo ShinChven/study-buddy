@@ -19,6 +19,7 @@ interface ChatContextType {
   deleteSession: (id: string) => void;
   updateSession: (session: ChatSession) => void;
   refreshSessions: () => void;
+  loadThread: (sessionId: string) => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -31,16 +32,63 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [reasoning, setReasoning] = useState<Record<string, string>>({});
   const stopRefs = useRef<Record<string, boolean>>({});
 
+  const loadThread = useCallback(async (sessionId: string) => {
+    if (!isAuthenticated) return;
+    try {
+        const thread = await apiService.getThread(sessionId);
+        const updatedMessages = thread.map((m: any) => {
+            const followUp: FollowUp = {};
+            if (m.artifacts && Array.isArray(m.artifacts)) {
+                m.artifacts.forEach((art: any) => {
+                    const data = JSON.parse(art.data);
+                    if (art.type === 'Chart') {
+                        if (!followUp.charts) followUp.charts = [];
+                        followUp.charts.push(data);
+                    } else if (art.type === 'Mermaid') {
+                        if (!followUp.mermaids) followUp.mermaids = [];
+                        followUp.mermaids.push(data);
+                    } else if (art.type === 'FlipCard') {
+                        if (!followUp.flipCards) followUp.flipCards = [];
+                        followUp.flipCards.push(data);
+                    } else if (art.type === 'Keynote') {
+                        followUp.keynotes = data;
+                    }
+                });
+            }
+
+            return {
+                id: m.id,
+                role: String(m.role).toLowerCase() === 'user' ? 'user' : 'assistant',
+                content: m.content,
+                timestamp: new Date(m.createdAt),
+                followUp: Object.keys(followUp).length > 0 ? followUp : undefined
+            };
+        });
+
+        setSessions(prev => prev.map(s => s.id === sessionId ? {
+            ...s,
+            messages: updatedMessages
+        } : s));
+    } catch (err) {
+        console.error("Failed to load thread", err);
+    }
+  }, [isAuthenticated]);
+
   const refreshSessions = useCallback(async () => {
     if (isAuthenticated) {
       try {
         const backendSessions = await apiService.getConversations();
-        setSessions(backendSessions.map((s: any) => ({
-          id: s.id,
-          title: s.title,
-          lastUpdated: new Date(s.lastUpdated),
-          messages: [] 
-        })));
+        setSessions(prev => {
+            return backendSessions.map((s: any) => {
+                const existing = prev.find(p => p.id === s.id);
+                return {
+                    id: s.id,
+                    title: s.title,
+                    lastUpdated: new Date(s.lastUpdated),
+                    messages: existing?.messages || []
+                };
+            });
+        });
       } catch (err) {
         console.error("Failed to fetch backend sessions", err);
       }
@@ -56,74 +104,57 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const updateSession = useCallback((session: ChatSession) => {
-    // Rely on backend persistence via hub/api
-    refreshSessions();
-  }, [refreshSessions]);
+    setSessions(prev => prev.map(s => s.id === session.id ? session : s));
+  }, []);
 
-  const deleteSession = useCallback((id: string) => {
-    // TODO: Implement backend delete endpoint call
-    refreshSessions();
-  }, [refreshSessions]);
-
-  const sendMessage = useCallback(async (sessionId: string, content: string, isAuto = false) => {
-    let session = sessions.find(s => s.id === sessionId);
-    
-    // Load full thread if messages are missing (e.g. initial sidebar load)
-    if (!session || (session.messages.length === 0 && isAuthenticated)) {
+  const deleteSession = useCallback(async (id: string) => {
+    if (isAuthenticated) {
+        setSessions(prev => prev.filter(s => s.id !== id));
         try {
-            const thread = await apiService.getThread(sessionId);
-            session = {
-                id: sessionId,
-                title: sessions.find(s => s.id === sessionId)?.title || "Chat",
-                messages: thread.map((m: any) => ({
-                    id: m.id,
-                    role: m.role === 0 ? 'user' : 'assistant',
-                    content: m.content,
-                    timestamp: new Date(m.createdAt)
-                })),
-                lastUpdated: new Date()
-            };
+            await apiService.deleteConversation(id);
         } catch (err) {
-            console.error("Failed to load thread", err);
-            return;
+            console.error("Failed to delete session", err);
+            refreshSessions();
         }
     }
-    
-    if (!session || isGenerating[sessionId]) return;
+  }, [isAuthenticated, refreshSessions]);
 
-    stopRefs.current[sessionId] = false;
+  const sendMessage = useCallback(async (sessionId: string, content: string, isAuto = false) => {
+    if (isGenerating[sessionId]) return;
+
     setIsGenerating(prev => ({ ...prev, [sessionId]: true }));
     setReasoning(prev => ({ ...prev, [sessionId]: '' }));
-
-    let currentMessages = [...session.messages];
-    
-    if (!isAuto) {
-      const userMessage: Message = {
-        id: uuidv4(),
-        role: 'user',
-        content,
-        timestamp: new Date(),
-      };
-      currentMessages.push(userMessage);
-    }
-
-    const assistantMessageId = uuidv4();
-    const initialAssistantMessage: Message = {
-      id: assistantMessageId,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-    };
-
-    const updatedSession: ChatSession = {
-      ...session,
-      messages: [...currentMessages, initialAssistantMessage],
-      lastUpdated: new Date()
-    };
-    
-    setSessions(prev => prev.map(s => s.id === sessionId ? updatedSession : s));
+    stopRefs.current[sessionId] = false;
 
     try {
+      // 1. Add User message (if not auto) and Assistant placeholder
+      const userMessageId = uuidv4();
+      const assistantMessageId = uuidv4();
+      
+      setSessions(prev => {
+          const session = prev.find(s => s.id === sessionId);
+          if (!session) return prev; // Or handle new session creation
+
+          const newMessages = [...session.messages];
+          if (!isAuto) {
+              newMessages.push({
+                  id: userMessageId,
+                  role: 'user',
+                  content,
+                  timestamp: new Date(),
+              });
+          }
+          newMessages.push({
+              id: assistantMessageId,
+              role: 'assistant',
+              content: '',
+              timestamp: new Date(),
+          });
+          
+          return prev.map(s => s.id === sessionId ? { ...s, messages: newMessages, lastUpdated: new Date() } : s);
+      });
+
+      // 2. Start Streaming
       let assistantContent = '';
       let assistantReasoning = '';
 
@@ -145,28 +176,26 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
         (messageId) => {
            // Finished streaming
+           // 4. Generate follow-ups
+           if (!stopRefs.current[sessionId] && assistantContent) {
+             setIsFollowUpGenerating(prev => ({ ...prev, [sessionId]: true }));
+             apiService.getFollowUp(messageId, assistantContent, (followUp) => {
+               if (followUp) {
+                   setSessions(prev => prev.map(s => s.id === sessionId ? {
+                       ...s,
+                       messages: s.messages.map(m => m.id === assistantMessageId ? { ...m, id: messageId, followUp: followUp } : m)
+                   } : s));
+               }
+               setIsFollowUpGenerating(prev => ({ ...prev, [sessionId]: false }));
+             }).catch(() => {
+                setIsFollowUpGenerating(prev => ({ ...prev, [sessionId]: false }));
+             });
+           }
         },
         (error) => {
            throw new Error(error);
         }
       );
-
-      // Generate follow-ups exclusively via Backend Proxy
-      if (!stopRefs.current[sessionId] && assistantContent) {
-        setIsFollowUpGenerating(prev => ({ ...prev, [sessionId]: true }));
-        try {
-          await apiService.getFollowUp(assistantContent, (followUp) => {
-            if (followUp) {
-                setSessions(prev => prev.map(s => s.id === sessionId ? {
-                    ...s,
-                    messages: s.messages.map(m => m.id === assistantMessageId ? { ...m, followUp: followUp } : m)
-                } : s));
-            }
-          });
-        } finally {
-          setIsFollowUpGenerating(prev => ({ ...prev, [sessionId]: false }));
-        }
-      }
 
     } catch (error: any) {
       console.error('Error chatting:', error);
@@ -174,7 +203,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsGenerating(prev => ({ ...prev, [sessionId]: false }));
       stopRefs.current[sessionId] = false;
     }
-  }, [isGenerating, sessions, isAuthenticated]);
+  }, [isGenerating, sessions, isAuthenticated, loadThread]);
 
   return (
     <ChatContext.Provider value={{ 
@@ -186,7 +215,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         stopGeneration, 
         deleteSession, 
         updateSession,
-        refreshSessions
+        refreshSessions,
+        loadThread
     }}>
       {children}
     </ChatContext.Provider>

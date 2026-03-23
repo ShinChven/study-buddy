@@ -44,6 +44,9 @@ class ApiService {
         try {
             await this.startConnection();
             
+            // Clean up existing listeners to avoid duplicates
+            this.off();
+
             this.connection?.on("ReceiveChunk", onChunk);
             this.connection?.on("ReceiveThinking", onThinking);
             this.connection?.on("Finished", (id) => {
@@ -57,15 +60,18 @@ class ApiService {
 
             await this.connection?.invoke("SendMessage", conversationId, content);
         } catch (err: any) {
+            this.off();
             onError(err.message);
         }
     }
 
     private off() {
-        this.connection?.off("ReceiveChunk");
-        this.connection?.off("ReceiveThinking");
-        this.connection?.off("Finished");
-        this.connection?.off("Error");
+        if (!this.connection) return;
+        this.connection.off("ReceiveChunk");
+        this.connection.off("ReceiveThinking");
+        this.connection.off("Finished");
+        this.connection.off("Error");
+        this.connection.off("ReceiveFollowUp");
     }
 
     async login(email: string, password: string) {
@@ -109,6 +115,14 @@ class ApiService {
         return res.json();
     }
 
+    async deleteConversation(id: string) {
+        const res = await fetch(`${API_URL}/api/conversation/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${this.token}` }
+        });
+        if (!res.ok && res.status !== 404) throw new Error("Failed to delete conversation");
+    }
+
     async getThread(conversationId: string) {
         const res = await fetch(`${API_URL}/api/conversation/${conversationId}/thread`, {
             headers: { 'Authorization': `Bearer ${this.token}` }
@@ -117,14 +131,18 @@ class ApiService {
         return res.json();
     }
 
-    async getFollowUp(assistantContent: string, onResult: (followUp: any) => void) {
+    async getFollowUp(messageId: string, assistantContent: string, onResult: (followUp: any) => void) {
         try {
             await this.startConnection();
+            
+            // Clean up existing listener
+            this.connection?.off("ReceiveFollowUp");
+
             this.connection?.on("ReceiveFollowUp", (json) => {
                 this.connection?.off("ReceiveFollowUp");
                 onResult(JSON.parse(json));
             });
-            await this.connection?.invoke("GetFollowUp", assistantContent);
+            await this.connection?.invoke("GetFollowUp", messageId, assistantContent);
         } catch (err) {
             console.error("Failed to get follow up", err);
         }

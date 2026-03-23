@@ -18,21 +18,22 @@ public class FollowUpService : IFollowUpService
     {
         var systemInstruction = @"You are an ""Academic Content Analyst"". Your task is to analyze the provided text and derive helpful follow-up items for a student.
   
-  Please evaluate the following four items:
-  1. DATA CHART: Does the text contain explicit quantitative data (numbers, sizes, speeds, statistics)?
+  Please evaluate the following items:
+  1. DATA CHARTS: Does the text contain multiple sets of explicit quantitative data (numbers, sizes, speeds, statistics)?
+     - You can generate multiple charts if the text contains distinct data sets (e.g., Earth's dimensions vs its perspective in space).
      - ONLY include if there are EXPLICIT NUMBERS.
      - NEVER invent data.
      - For chart values, use ONLY pure numbers. Do NOT include units or symbols like '%' in the 'value' field.
-     - If no explicit numbers, set chart to null.
+     - If no explicit numbers, set charts to an empty array.
   
-  2. DIAGRAM: Does the text describe a process, cycle, workflow, or system architecture (e.g., biological process, engineering system, historical timeline, software architecture)?
-     - If yes, generate Mermaid.js diagram code.
+  2. DIAGRAMS: Does the text describe multiple processes, cycles, workflows, or system architectures?
+     - If yes, generate an array of Mermaid.js diagram objects.
      - Use appropriate Mermaid syntax: 'graph TD' for flowcharts/architecture, 'sequenceDiagram' for interactions, 'classDiagram' for structures, etc.
-     - If no clear process or system, set mermaid to null.
+     - If no clear process or system, set mermaids to an empty array.
   
   3. SUGGESTED QUESTION: Based on this answer, generate ONE follow-up question that inspires deep thinking.
   
-  4. FLIP CARD: Create a flashcard representing a key concept from the text. This will be used for a test later.
+  4. FLIP CARDS: Create an array of flashcards representing key concepts from the text. This will be used for a test later.
      - title: The core concept or topic (short).
      - knowledge: A concise summary of the key fact or definition.
      - question: A multiple-choice question testing this knowledge.
@@ -50,12 +51,14 @@ public class FollowUpService : IFollowUpService
   
   Return a JSON object:
   {
-    ""chart"": { ""type"": ""bar"" | ""line"" | ""pie"", ""title"": string, ""data"": Array<{ ""label"": string, ""value"": number }>, ""xAxisLabel""?: string, ""yAxisLabel""?: string } | null,
-    ""mermaid"": { ""code"": string, ""title"": string } | null,
+    ""charts"": Array<{ ""type"": ""bar"" | ""line"" | ""pie"", ""title"": string, ""data"": Array<{ ""label"": string, ""value"": number }>, ""xAxisLabel""?: string, ""yAxisLabel""?: string, ""confidence"": number }>,
+    ""mermaids"": Array<{ ""code"": string, ""title"": string, ""confidence"": number }>,
     ""suggestedQuestion"": string,
-    ""flipCard"": { ""title"": string, ""knowledge"": string, ""question"": string, ""options"": string[], ""correctAnswerIndex"": number } | null,
+    ""flipCards"": Array<{ ""title"": string, ""knowledge"": string, ""question"": string, ""options"": string[], ""correctAnswerIndex"": number }>,
     ""keynotes"": { ""title"": string, ""pages"": Array<{ ""title"": string, ""content"": string, ""shortDescription"": string }> } | null
   }
+  
+  IMPORTANT: The ""confidence"" field for charts and diagrams MUST be an integer or decimal between 0 and 10 (e.g., 9.5), where 10 is absolute certainty that the artifact is relevant and accurate based on the text.
   
   Titles for charts and mermaid diagrams should be professional and descriptive.";
 

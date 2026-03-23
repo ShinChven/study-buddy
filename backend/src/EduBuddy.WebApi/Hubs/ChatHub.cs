@@ -25,11 +25,81 @@ public class ChatHub : Hub
         _followUpService = followUpService;
     }
 
-    public async Task GetFollowUp(string assistantContent)
+    public async Task GetFollowUp(Guid messageId, string assistantContent)
     {
         var result = await _followUpService.GenerateFollowUpAsync(assistantContent);
         if (result != null)
         {
+            // Save artifacts to database
+            try 
+            {
+                var followUpData = JsonSerializer.Deserialize<JsonElement>(result);
+                
+                // Save Charts
+                if (followUpData.TryGetProperty("charts", out var charts) && charts.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var chart in charts.EnumerateArray())
+                    {
+                        _context.Artifacts.Add(new Artifact
+                        {
+                            MessageId = messageId,
+                            Type = ArtifactType.Chart,
+                            ConfidenceScore = chart.TryGetProperty("confidence", out var c) ? c.GetDouble() : 10,
+                            Data = chart.GetRawText()
+                        });
+                    }
+                }
+
+                // Save Mermaids
+                if (followUpData.TryGetProperty("mermaids", out var mermaids) && mermaids.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var mermaid in mermaids.EnumerateArray())
+                    {
+                        _context.Artifacts.Add(new Artifact
+                        {
+                            MessageId = messageId,
+                            Type = ArtifactType.Mermaid,
+                            ConfidenceScore = mermaid.TryGetProperty("confidence", out var c) ? c.GetDouble() : 10,
+                            Data = mermaid.GetRawText()
+                        });
+                    }
+                }
+
+                // Save FlipCards
+                if (followUpData.TryGetProperty("flipCards", out var flipCards) && flipCards.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var card in flipCards.EnumerateArray())
+                    {
+                        _context.Artifacts.Add(new Artifact
+                        {
+                            MessageId = messageId,
+                            Type = ArtifactType.FlipCard,
+                            ConfidenceScore = 10,
+                            Data = card.GetRawText()
+                        });
+                    }
+                }
+
+                // Save Keynotes
+                if (followUpData.TryGetProperty("keynotes", out var keynotes) && keynotes.ValueKind != JsonValueKind.Null)
+                {
+                    _context.Artifacts.Add(new Artifact
+                    {
+                        MessageId = messageId,
+                        Type = ArtifactType.Keynote,
+                        ConfidenceScore = 10,
+                        Data = keynotes.GetRawText()
+                    });
+                }
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // Log error but still send the result to the caller for immediate UI update
+                Console.WriteLine($"Error saving artifacts: {ex.Message}");
+            }
+
             await Clients.Caller.SendAsync("ReceiveFollowUp", result);
         }
     }

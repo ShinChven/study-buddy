@@ -121,4 +121,16 @@ public class ConversationService : IConversationService
 
         await _context.SaveChangesAsync();
     }
+
+    public async Task<bool> DeleteConversationAsync(Guid conversationId, Guid userId)
+    {
+        var conversation = await _context.Conversations
+            .FirstOrDefaultAsync(c => c.Id == conversationId && c.UserId == userId);
+
+        if (conversation == null) return false;
+
+        _context.Conversations.Remove(conversation);
+        await _context.SaveChangesAsync();
+        return true;
+    }
 }

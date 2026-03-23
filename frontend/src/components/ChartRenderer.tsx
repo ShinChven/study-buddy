@@ -17,7 +17,20 @@ import {
 import { ChartConfig, getAccentHex } from '../types';
 import { useTheme } from './ThemeProvider';
 
-const COLORS = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
+const COLORS = [
+  '#6366f1', // Indigo
+  '#3b82f6', // Blue
+  '#10b981', // Emerald
+  '#f59e0b', // Amber
+  '#f43f5e', // Rose
+  '#8b5cf6', // Violet
+  '#ec4899', // Pink
+  '#06b6d4', // Cyan
+  '#f97316', // Orange
+  '#14b8a6', // Teal
+  '#a855f7', // Purple
+  '#ef4444'  // Red
+];
 
 export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => {
   const { theme } = useTheme();
@@ -35,9 +48,9 @@ export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => 
       case 'bar':
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={config.data} margin={{ left: 20, right: 10, top: 10, bottom: 10 }}>
+            <BarChart margin={{ left: 20, right: 10, top: 10, bottom: 10 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#334155" : "#f0f0f0"} />
-              <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 12 }} />
+              <XAxis dataKey="label" data={config.data} axisLine={false} tickLine={false} tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 12 }} />
               <YAxis 
                 axisLine={false} 
                 tickLine={false} 
@@ -58,10 +71,10 @@ export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => 
                 formatter={(value: any) => [value.toLocaleString(), 'Value']}
               />
               <Bar 
+                data={config.data}
                 dataKey="value" 
                 radius={[4, 4, 0, 0]} 
                 animationDuration={1500}
-                background={{ fill: 'transparent' }}
               >
                 {config.data.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -95,7 +108,28 @@ export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => 
                 itemStyle={{ color: isDark ? '#f8fafc' : '#1e293b' }}
                 formatter={(value: any) => [value.toLocaleString(), 'Value']}
               />
-              <Line type="monotone" dataKey="value" stroke={accentColor} strokeWidth={3} dot={{ r: 6, fill: accentColor }} animationDuration={1500} />
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke={accentColor} 
+                strokeWidth={3} 
+                animationDuration={1500}
+                dot={(props: any) => {
+                  const { cx, cy, index } = props;
+                  return (
+                    <circle 
+                      key={`dot-${index}`}
+                      cx={cx} 
+                      cy={cy} 
+                      r={6} 
+                      fill={COLORS[index % COLORS.length]} 
+                      stroke="#fff" 
+                      strokeWidth={2}
+                    />
+                  );
+                }}
+                activeDot={{ r: 8, strokeWidth: 0 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         );

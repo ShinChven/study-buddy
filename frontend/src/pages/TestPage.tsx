@@ -29,8 +29,8 @@ export const TestPage: React.FC = () => {
   const flipCards = useMemo(() => {
     const cards: FlipCard[] = [];
     messages.forEach(m => {
-      if (m.followUp?.flipCard) {
-        cards.push(m.followUp.flipCard);
+      if (m.followUp?.flipCards) {
+        cards.push(...m.followUp.flipCards);
       }
     });
     // Shuffle cards

@@ -62,6 +62,15 @@ public class ConversationController : ControllerBase
         return Ok();
     }
 
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteConversation(Guid id)
+    {
+        var userId = GetUserId();
+        var result = await _conversationService.DeleteConversationAsync(id, userId);
+        if (!result) return NotFound();
+        return NoContent();
+    }
+
     private Guid GetUserId()
     {
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);

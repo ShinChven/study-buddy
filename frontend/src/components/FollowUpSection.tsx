@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FollowUp, FollowUpSettings } from '../types';
 import { ChartRenderer } from './ChartRenderer';
 import { MermaidRenderer } from './MermaidRenderer';
@@ -12,161 +12,162 @@ interface FollowUpSectionProps {
 }
 
 export const FollowUpSection: React.FC<FollowUpSectionProps> = ({ followUp, onQuestionClick, settings }) => {
-  const [isChartOpen, setIsChartOpen] = useState(false);
-  const [isMermaidOpen, setIsMermaidOpen] = useState(false);
+  const [openCharts, setOpenCharts] = useState<Record<number, boolean>>({});
+  const [openMermaids, setOpenMermaids] = useState<Record<number, boolean>>({});
   
-  const chartRef = useRef<HTMLDivElement>(null);
-  const mermaidRef = useRef<HTMLDivElement>(null);
+  const toggleChart = (index: number) => {
+    setOpenCharts(prev => ({ ...prev, [index]: !prev[index] }));
+  };
 
-  useEffect(() => {
-    if (isChartOpen && chartRef.current) {
-      // Small delay to allow the expansion animation to start/layout to stabilize
-      setTimeout(() => {
-        chartRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 150);
-    }
-  }, [isChartOpen]);
+  const toggleMermaid = (index: number) => {
+    setOpenMermaids(prev => ({ ...prev, [index]: !prev[index] }));
+  };
 
-  useEffect(() => {
-    if (isMermaidOpen && mermaidRef.current) {
-      setTimeout(() => {
-        mermaidRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 150);
-    }
-  }, [isMermaidOpen]);
-
-  if (!followUp.chart && !followUp.mermaid && !followUp.suggestedQuestion) return null;
-
-  const showChart = followUp.chart && (followUp.chart.confidence === undefined || followUp.chart.confidence >= settings.threshold || settings.showSkipped);
-  const showMermaid = followUp.mermaid && (followUp.mermaid.confidence === undefined || followUp.mermaid.confidence >= settings.threshold || settings.showSkipped);
+  if ((!followUp.charts || followUp.charts.length === 0) && 
+      (!followUp.mermaids || followUp.mermaids.length === 0) && 
+      !followUp.suggestedQuestion) return null;
 
   return (
     <div className="mt-4 space-y-3 w-full">
-      {/* Chart Section */}
-      {showChart && followUp.chart && (
-        <motion.div 
-          ref={chartRef}
-          layout
-          className={`overflow-hidden transition-all duration-300 border shadow-sm w-full ${
-            followUp.chart.confidence !== undefined && followUp.chart.confidence < settings.threshold
-              ? 'border-red-200 dark:border-red-900/30 opacity-70 grayscale'
-              : 'border-slate-100 dark:border-slate-800'
-          } ${
-            isChartOpen 
-              ? 'bg-white dark:bg-slate-900 rounded-2xl rounded-tl-none p-4' 
-              : 'bg-white dark:bg-slate-900 rounded-2xl px-4 py-2 cursor-pointer hover:border-accent-200 hover:bg-accent-50/30 dark:hover:bg-accent-900/10'
-          }`}
-          onClick={() => !isChartOpen && setIsChartOpen(true)}
-        >
-          <div 
-            className={`flex items-center gap-2 ${isChartOpen ? 'mb-4' : ''}`}
-            onClick={(e) => {
-              if (isChartOpen) {
-                e.stopPropagation();
-                setIsChartOpen(false);
-              }
-            }}
+      {/* Charts Section */}
+      {followUp.charts?.map((chart, idx) => {
+        const isVisible = chart.confidence === undefined || chart.confidence >= settings.threshold || settings.showSkipped;
+        if (!isVisible) return null;
+
+        const isOpen = !!openCharts[idx];
+        
+        return (
+          <motion.div 
+            key={`chart-${idx}`}
+            layout
+            className={`overflow-hidden transition-all duration-300 border shadow-sm w-full ${
+              chart.confidence !== undefined && chart.confidence < settings.threshold
+                ? 'border-red-200 dark:border-red-900/30 opacity-70 grayscale'
+                : 'border-slate-100 dark:border-slate-800'
+            } ${
+              isOpen 
+                ? 'bg-white dark:bg-slate-900 rounded-2xl rounded-tl-none p-4' 
+                : 'bg-white dark:bg-slate-900 rounded-2xl px-4 py-2 cursor-pointer hover:border-accent-200 hover:bg-accent-50/30 dark:hover:bg-accent-900/10'
+            }`}
+            onClick={() => !isOpen && toggleChart(idx)}
           >
-            <BarChart2 size={16} className={isChartOpen ? 'text-accent-600' : 'text-slate-500 dark:text-slate-400'} />
-            <span className={`text-xs font-semibold ${isChartOpen ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
-              {followUp.chart.title || "Data Analysis"}
-            </span>
-            {settings.debugMode && followUp.chart.confidence !== undefined && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                followUp.chart.confidence >= settings.threshold ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-              }`}>
-                Score: {followUp.chart.confidence}/10
+            <div 
+              className={`flex items-center gap-2 ${isOpen ? 'mb-4' : ''}`}
+              onClick={(e) => {
+                if (isOpen) {
+                  e.stopPropagation();
+                  toggleChart(idx);
+                }
+              }}
+            >
+              <BarChart2 size={16} className={isOpen ? 'text-accent-600' : 'text-slate-500 dark:text-slate-400'} />
+              <span className={`text-xs font-semibold ${isOpen ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                {chart.title || "Data Analysis"}
               </span>
-            )}
-            <div className="ml-auto pl-2 text-slate-400">
-              {isChartOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              {settings.debugMode && chart.confidence !== undefined && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                  chart.confidence >= settings.threshold ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  Score: {chart.confidence}/10
+                </span>
+              )}
+              <div className="ml-auto pl-2 text-slate-400">
+                {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
             </div>
-          </div>
-          
-          <AnimatePresence>
-            {isChartOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden"
-              >
-                {followUp.chart.confidence !== undefined && followUp.chart.confidence < settings.threshold && (
-                  <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs rounded-lg flex items-center gap-2">
-                    <AlertTriangle size={14} />
-                    This chart was skipped because its confidence score ({followUp.chart.confidence}) is below the threshold ({settings.threshold}).
-                  </div>
-                )}
-                <ChartRenderer config={followUp.chart} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      )}
+            
+            <AnimatePresence>
+              {isOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  {chart.confidence !== undefined && chart.confidence < settings.threshold && (
+                    <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs rounded-lg flex items-center gap-2">
+                      <AlertTriangle size={14} />
+                      This chart was skipped because its confidence score ({chart.confidence}) is below the threshold ({settings.threshold}).
+                    </div>
+                  )}
+                  <ChartRenderer config={chart} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        );
+      })}
 
       {/* Mermaid Section */}
-      {showMermaid && followUp.mermaid && (
-        <motion.div 
-          ref={mermaidRef}
-          layout
-          className={`overflow-hidden transition-all duration-300 border shadow-sm w-full ${
-            followUp.mermaid.confidence !== undefined && followUp.mermaid.confidence < settings.threshold
-              ? 'border-red-200 dark:border-red-900/30 opacity-70 grayscale'
-              : 'border-slate-100 dark:border-slate-800'
-          } ${
-            isMermaidOpen 
-              ? 'bg-white dark:bg-slate-900 rounded-2xl rounded-tl-none p-4' 
-              : 'bg-white dark:bg-slate-900 rounded-2xl px-4 py-2 cursor-pointer hover:border-emerald-200 hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10'
-          }`}
-          onClick={() => !isMermaidOpen && setIsMermaidOpen(true)}
-        >
-          <div 
-            className={`flex items-center gap-2 ${isMermaidOpen ? 'mb-4' : ''}`}
-            onClick={(e) => {
-              if (isMermaidOpen) {
-                e.stopPropagation();
-                setIsMermaidOpen(false);
-              }
-            }}
-          >
-            <GitBranch size={16} className={isMermaidOpen ? 'text-emerald-600' : 'text-slate-500 dark:text-slate-400'} />
-            <span className={`text-xs font-semibold ${isMermaidOpen ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
-              {followUp.mermaid.title || "Visual Diagram"}
-            </span>
-            {settings.debugMode && followUp.mermaid.confidence !== undefined && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                followUp.mermaid.confidence >= settings.threshold ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-              }`}>
-                Score: {followUp.mermaid.confidence}/10
-              </span>
-            )}
-            <div className="ml-auto pl-2 text-slate-400">
-              {isMermaidOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </div>
-          </div>
+      {followUp.mermaids?.map((mermaid, idx) => {
+        const isVisible = mermaid.confidence === undefined || mermaid.confidence >= settings.threshold || settings.showSkipped;
+        if (!isVisible) return null;
 
-          <AnimatePresence>
-            {isMermaidOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden"
-              >
-                {followUp.mermaid.confidence !== undefined && followUp.mermaid.confidence < settings.threshold && (
-                  <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs rounded-lg flex items-center gap-2">
-                    <AlertTriangle size={14} />
-                    This diagram was skipped because its confidence score ({followUp.mermaid.confidence}) is below the threshold ({settings.threshold}).
+        const isOpen = !!openMermaids[idx];
+
+        return (
+          <motion.div 
+            key={`mermaid-${idx}`}
+            layout
+            className={`overflow-hidden transition-all duration-300 border shadow-sm w-full ${
+              mermaid.confidence !== undefined && mermaid.confidence < settings.threshold
+                ? 'border-red-200 dark:border-red-900/30 opacity-70 grayscale'
+                : 'border-slate-100 dark:border-slate-800'
+            } ${
+              isOpen 
+                ? 'bg-white dark:bg-slate-900 rounded-2xl rounded-tl-none p-4' 
+                : 'bg-white dark:bg-slate-900 rounded-2xl px-4 py-2 cursor-pointer hover:border-emerald-200 hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10'
+            }`}
+            onClick={() => !isOpen && toggleMermaid(idx)}
+          >
+            <div 
+              className={`flex items-center gap-2 ${isOpen ? 'mb-4' : ''}`}
+              onClick={(e) => {
+                if (isOpen) {
+                  e.stopPropagation();
+                  toggleMermaid(idx);
+                }
+              }}
+            >
+              <GitBranch size={16} className={isOpen ? 'text-emerald-600' : 'text-slate-500 dark:text-slate-400'} />
+              <span className={`text-xs font-semibold ${isOpen ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                {mermaid.title || "Visual Diagram"}
+              </span>
+              {settings.debugMode && mermaid.confidence !== undefined && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                  mermaid.confidence >= settings.threshold ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  Score: {mermaid.confidence}/10
+                </span>
+              )}
+              <div className="ml-auto pl-2 text-slate-400">
+                {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {isOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  {mermaid.confidence !== undefined && mermaid.confidence < settings.threshold && (
+                    <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs rounded-lg flex items-center gap-2">
+                      <AlertTriangle size={14} />
+                      This diagram was skipped because its confidence score ({mermaid.confidence}) is below the threshold ({settings.threshold}).
+                    </div>
+                  )}
+                  <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-2 border border-slate-100 dark:border-slate-800">
+                    <MermaidRenderer code={mermaid.code} />
                   </div>
-                )}
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-2 border border-slate-100 dark:border-slate-800">
-                  <MermaidRenderer code={followUp.mermaid.code} />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        );
+      })}
 
       {/* Suggested Question */}
       {followUp.suggestedQuestion && (

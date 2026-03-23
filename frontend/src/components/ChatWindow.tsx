@@ -186,9 +186,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, thinking, onSe
       >
         <AnimatePresence initial={false}>
           {messages.map((msg, idx) => {
-            if (msg.role === 'assistant' && !msg.content && isLoading && idx === messages.length - 1) {
-              return null;
-            }
             return (
             <motion.div
               key={msg.id}

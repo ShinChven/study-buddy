@@ -65,10 +65,10 @@ export interface Keynote {
 }
 
 export interface FollowUp {
-  chart?: ChartConfig;
-  mermaid?: MermaidConfig;
+  charts?: ChartConfig[];
+  mermaids?: MermaidConfig[];
   suggestedQuestion?: string;
-  flipCard?: FlipCard;
+  flipCards?: FlipCard[];
   keynotes?: Keynote;
 }
 

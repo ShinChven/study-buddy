@@ -126,10 +126,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className={`fixed md:static inset-y-0 left-0 z-50 transform ${
         isOpen ? 'translate-x-0 w-72 md:w-64 lg:w-72 border-r p-0' : '-translate-x-full md:translate-x-0 w-0 border-0 p-0 overflow-hidden'
       } transition-all duration-300 ease-in-out h-full bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 flex flex-col shrink-0`}>
-        
+
         {/* Close Button Mobile */}
         {isOpen && onClose && (
-          <button 
+          <button
             onClick={onClose}
             className="md:hidden absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors z-10"
           >
@@ -160,14 +160,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
             Recent Lessons
           </div>
           {sessions.map((session) => (
-            <button
+            <div
               key={session.id}
               onClick={() => onSelectSession(session.id)}
-              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left group relative ${
+              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left group relative cursor-pointer ${
                 activeSessionId === session.id
                   ? 'bg-accent-600 text-white shadow-md'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  onSelectSession(session.id);
+                }
+              }}
             >
               <MessageSquare size={18} className={activeSessionId === session.id ? 'text-accent-200' : 'text-slate-400 dark:text-slate-500'} />
               <span className="truncate font-medium text-sm pr-6">{session.title}</span>
@@ -180,16 +187,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <Trash2 size={14} />
               </button>
-            </button>
+            </div>
           ))}
         </div>
-
-        <DeleteConfirmModal 
-          isOpen={!!deleteId} 
-          onClose={() => setDeleteId(null)} 
-          onConfirm={confirmDelete}
-          title={sessionToDelete?.title || ''}
-        />
 
         <div className="p-4 md:p-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
           {isAdmin && (
@@ -218,7 +218,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="w-7 h-4 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 dark:after:border-slate-600 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-accent-600"></div>
               </label>
             </div>
-            
+
             {followUpSettings.debugMode && (
               <div className="space-y-3 pt-3 mt-3 border-t border-slate-200 dark:border-slate-700">
                 <div className="flex items-center justify-between">
@@ -335,6 +335,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
       </div>
-    </>
-  );
-};
+
+      <DeleteConfirmModal 
+        isOpen={!!deleteId} 
+        onClose={() => setDeleteId(null)} 
+        onConfirm={confirmDelete}
+        title={sessionToDelete?.title || ''}
+      />
+      </>
+      );
+      };

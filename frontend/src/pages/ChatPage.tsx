@@ -27,10 +27,21 @@ export const ChatPage: React.FC = () => {
     sendMessage, 
     stopGeneration, 
     deleteSession, 
-    updateSession 
+    updateSession,
+    loadThread
   } = useChat();
   
   const [activeSession, setActiveSession] = useState<ChatSession | null>(null);
+
+  // Load thread when switching sessions if messages are empty
+  useEffect(() => {
+    if (conversation_id) {
+        const session = sessions.find(s => s.id === conversation_id);
+        if (session && session.messages.length === 0 && !isGenerating[conversation_id]) {
+            loadThread(conversation_id);
+        }
+    }
+  }, [conversation_id, sessions, loadThread, isGenerating]);
   const [followUpSettings, setFollowUpSettings] = useState<FollowUpSettings>({
     debugMode: false,
     showSkipped: true,

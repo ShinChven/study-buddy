@@ -25,8 +25,8 @@ export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({ messages, settings
     }));
 
   const flipCards = messages
-    .filter(m => m.followUp?.flipCard)
-    .map(m => m.followUp!.flipCard!);
+    .filter(m => m.followUp?.flipCards)
+    .flatMap(m => m.followUp!.flipCards!);
 
   return (
     <>

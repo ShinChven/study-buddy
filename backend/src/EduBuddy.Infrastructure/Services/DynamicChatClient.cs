@@ -72,13 +72,9 @@ public class NullChatClient : IChatClient
     public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default) 
         => Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, "AI provider is not configured. Please set an API key in the Admin settings.")));
         
-    public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        return GetEmptyAsyncEnumerable();
-    }
-
-    private async IAsyncEnumerable<ChatResponseUpdate> GetEmptyAsyncEnumerable()
-    {
+        await Task.CompletedTask;
         yield break;
     }
 
