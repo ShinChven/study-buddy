@@ -101,7 +101,7 @@ export async function generateFollowUp(assistantText: string): Promise<FollowUp 
   
   const systemInstruction = `You are an "Academic Content Analyst". Your task is to analyze the provided text and derive helpful follow-up items for a student.
   
-  Please evaluate the following three items:
+  Please evaluate the following four items:
   1. DATA CHART: Does the text contain explicit quantitative data (numbers, sizes, speeds, statistics)?
      - ONLY include if there are EXPLICIT NUMBERS.
      - NEVER invent data.
@@ -180,7 +180,8 @@ export async function generateFollowUp(assistantText: string): Promise<FollowUp 
     return {
       chart: result.chart || undefined,
       mermaid: result.mermaid || undefined,
-      suggestedQuestion: result.suggestedQuestion || undefined
+      suggestedQuestion: result.suggestedQuestion || undefined,
+      flipCard: result.flipCard || undefined
     };
   } catch (e) {
     return null;
