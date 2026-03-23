@@ -1,14 +1,30 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle, XCircle, Trophy, ArrowRight, RotateCcw } from 'lucide-react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Message, FlipCard } from '../types';
+import { getSessionById } from '../services/storage';
 
-interface TestPageProps {
-  messages: Message[];
-  onClose: () => void;
-}
+export const TestPage: React.FC = () => {
+  const { conversation_id } = useParams<{ conversation_id: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  const [messages, setMessages] = useState<Message[]>([]);
 
-export const TestPage: React.FC<TestPageProps> = ({ messages, onClose }) => {
+  useEffect(() => {
+    if (conversation_id) {
+      const session = getSessionById(conversation_id);
+      if (session) {
+        setMessages(session.messages);
+      } else if (location.state?.messages) {
+        setMessages(location.state.messages);
+      }
+    } else if (location.state?.messages) {
+      setMessages(location.state.messages);
+    }
+  }, [conversation_id, location.state]);
+
   const flipCards = useMemo(() => {
     const cards: FlipCard[] = [];
     messages.forEach(m => {
@@ -25,6 +41,10 @@ export const TestPage: React.FC<TestPageProps> = ({ messages, onClose }) => {
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+
+  const onClose = () => {
+    navigate(-1);
+  };
 
   if (flipCards.length === 0) {
     return (
