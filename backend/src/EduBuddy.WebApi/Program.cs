@@ -55,15 +55,7 @@ builder.Services.AddDbContext<EduBuddyDbContext>(options =>
 
 // AI Client
 var geminiApiKey = builder.Configuration["GeminiApiKey"];
-if (!string.IsNullOrEmpty(geminiApiKey) && geminiApiKey != "YOUR_GEMINI_API_KEY")
-{
-    builder.Services.AddChatClient(new GeminiChatClient(apiKey: geminiApiKey, model: "gemini-3-flash-preview"));
-}
-else
-{
-    // Register a dummy client for design-time/migrations if key is missing
-    builder.Services.AddChatClient(new NullChatClient());
-}
+builder.Services.AddSingleton<IChatClient>(sp => new DynamicChatClient(sp, geminiApiKey ?? ""));
 
 // Identity
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
@@ -158,20 +150,3 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
-
-// Dummy client for design-time
-class NullChatClient : IChatClient
-{
-    public void Dispose() { }
-    public Task<ChatResponse> GetResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default) 
-        => Task.FromResult(new ChatResponse(new Microsoft.Extensions.AI.ChatMessage(ChatRole.Assistant, "")));
-    public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<Microsoft.Extensions.AI.ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
-        => GetEmptyAsyncEnumerable();
-
-    private async IAsyncEnumerable<ChatResponseUpdate> GetEmptyAsyncEnumerable()
-    {
-        yield break;
-    }
-
-    public object? GetService(Type serviceType, object? serviceKey = null) => null;
-}

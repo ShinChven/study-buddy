@@ -37,13 +37,17 @@ public class AuthService : IAuthService
         var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
         if (!result.Succeeded) return null;
 
+        var roles = await _userManager.GetRolesAsync(user);
+        var isAdmin = roles.Contains("Admin");
+
         return new AuthResponse
         {
-            Token = GenerateJwtToken(user),
+            Token = GenerateJwtToken(user, roles),
             Email = user.Email!,
             DisplayName = user.DisplayName ?? user.Email!,
             AvatarUrl = user.AvatarUrl,
-            UserId = user.Id
+            UserId = user.Id,
+            IsAdmin = isAdmin
         };
     }
 
@@ -60,17 +64,21 @@ public class AuthService : IAuthService
         var result = await _userManager.CreateAsync(user, request.Password);
         if (!result.Succeeded) return null;
 
+        var roles = await _userManager.GetRolesAsync(user);
+        var isAdmin = roles.Contains("Admin");
+
         return new AuthResponse
         {
-            Token = GenerateJwtToken(user),
+            Token = GenerateJwtToken(user, roles),
             Email = user.Email!,
             DisplayName = user.DisplayName ?? user.Email!,
             AvatarUrl = user.AvatarUrl,
-            UserId = user.Id
+            UserId = user.Id,
+            IsAdmin = isAdmin
         };
     }
 
-    private string GenerateJwtToken(User user)
+    private string GenerateJwtToken(User user, IList<string> roles)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
         var secretKey = jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key not found");
@@ -84,6 +92,11 @@ public class AuthService : IAuthService
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim("displayName", user.DisplayName ?? "")
         };
+
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var token = new JwtSecurityToken(
             issuer: jwtSettings["Issuer"],

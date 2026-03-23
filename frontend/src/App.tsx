@@ -10,9 +10,20 @@ import { NewChatPage } from './pages/NewChatPage';
 import { ChatPage } from './pages/ChatPage';
 import { TestPage } from './pages/TestPage';
 import { KeynotePage } from './pages/KeynotePage';
+import { AppSelectionPage } from './pages/AppSelectionPage';
+import { AdminLayout } from './components/AdminLayout';
+import { AdminUsersPage } from './pages/admin/AdminUsersPage';
+import { AdminProvidersPage } from './pages/admin/AdminProvidersPage';
 import { ChatProvider } from './components/ChatProvider';
 import { ThemeProvider } from './components/ThemeProvider';
-import { AuthProvider, AuthGuard } from './components/AuthProvider';
+import { AuthProvider, AuthGuard, useAuth } from './components/AuthProvider';
+
+const AdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { isAuthenticated, isAdmin } = useAuth();
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
+    if (!isAdmin) return <Navigate to="/study/new" replace />;
+    return <>{children}</>;
+};
 
 export default function App() {
   return (
@@ -23,6 +34,22 @@ export default function App() {
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               
+              <Route path="/select-app" element={
+                <AdminGuard>
+                  <AppSelectionPage />
+                </AdminGuard>
+              } />
+
+              <Route path="/admin" element={
+                <AdminGuard>
+                  <AdminLayout />
+                </AdminGuard>
+              }>
+                <Route index element={<Navigate to="users" replace />} />
+                <Route path="users" element={<AdminUsersPage />} />
+                <Route path="ai-providers" element={<AdminProvidersPage />} />
+              </Route>
+
               {/* Study nested routes - Protected */}
               <Route path="/study/new" element={
                 <AuthGuard>

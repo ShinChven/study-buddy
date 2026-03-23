@@ -129,6 +129,34 @@ class ApiService {
             console.error("Failed to get follow up", err);
         }
     }
+
+    async getSetting(key: string) {
+        const res = await fetch(`${API_URL}/api/admin/settings/${key}`, {
+            headers: { 'Authorization': `Bearer ${this.token}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch setting");
+        return res.json();
+    }
+
+    async updateSetting(key: string, value: string) {
+        const res = await fetch(`${API_URL}/api/admin/settings`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.token}`
+            },
+            body: JSON.stringify({ key, value })
+        });
+        if (!res.ok) throw new Error("Failed to update setting");
+    }
+
+    async getUsers() {
+        const res = await fetch(`${API_URL}/api/admin/users`, {
+            headers: { 'Authorization': `Bearer ${this.token}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch users");
+        return res.json();
+    }
 }
 
 export const apiService = new ApiService();

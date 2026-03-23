@@ -21,8 +21,12 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      await login(formData.email, formData.password);
-      navigate('/study/new');
+      const profile = await login(formData.email, formData.password);
+      if (profile.isAdmin) {
+        navigate('/select-app');
+      } else {
+        navigate('/study/new');
+      }
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your credentials.');
     } finally {
