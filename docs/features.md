@@ -73,13 +73,8 @@ Designed for focus and ease of use, the platform offers a modern, responsive env
 
 ## 5. Technical Implementation Highlights
 
-*   **Advanced AI Orchestration**: Uses `gemini-3-flash-preview` with a multi-pass workflow:
-    1.  **Generation**: Primary knowledge response.
-    2.  **Extraction**: Content analysis for charts, diagrams, keynotes, and cards.
+*   **Advanced AI Orchestration**: Leverages **Microsoft.Extensions.AI** for a unified, provider-agnostic approach:
+    1.  **Generation**: Uses `IChatClient` for streaming knowledge responses, with first-class support for reasoning models (thinking tokens).
+    2.  **Extraction**: Employs **Tool Calling** (Function Calling) to automatically extract charts, diagrams, keynotes, and cards.
     3.  **Validation**: AI-based reassessment and confidence scoring for visual elements.
-*   **Modern Web Stack**:
-    *   **React 19** with TypeScript for a robust, type-safe frontend.
-    *   **Tailwind CSS 4** for modern, utility-first styling.
-    *   **Framer Motion** for fluid, high-quality animations.
-    *   **Vite** for ultra-fast development and build processes.
-*   **Reliable API Integration**: Robust error handling for AI rate limits and generation failures.
+*   **Secure AI Proxy**: All AI communication is proxied through the .NET backend to protect API keys and apply server-side safety filtering.
