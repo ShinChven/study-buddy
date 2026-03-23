@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChatSession, FollowUpSettings, ThemeSettings, AccentColor, ACCENT_COLORS } from '../types';
-import { MessageSquare, History, Plus, GraduationCap, Moon, Sun, Palette, Settings2, Trash2, AlertCircle, X } from 'lucide-react';
+import { MessageSquare, History, Plus, GraduationCap, Moon, Sun, Palette, Settings2, Trash2, AlertCircle, X, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface SidebarProps {
@@ -88,6 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onUpdateTheme
 }) => {
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
+  const [isThemeExpanded, setIsThemeExpanded] = React.useState(false);
 
   const handleDeleteClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -209,45 +210,75 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        <div className="space-y-4 mb-4">
-          <div className="flex items-center justify-between px-2">
-            <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400">
-              {themeSettings.isDarkMode ? <Moon size={14} /> : <Sun size={14} />}
-              <span className="text-xs font-medium">Dark Mode</span>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer"
-                checked={themeSettings.isDarkMode}
-                onChange={(e) => onUpdateTheme({ ...themeSettings, isDarkMode: e.target.checked })}
-              />
-              <div className="w-7 h-4 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 dark:after:border-slate-600 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-accent-600"></div>
-            </label>
-          </div>
-
-          <div className="px-2 space-y-2">
-            <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
+        <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+          <button 
+            onClick={() => setIsThemeExpanded(!isThemeExpanded)}
+            className="w-full flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 group-hover:text-accent-600 dark:group-hover:text-accent-400 transition-colors">
               <Palette size={14} />
-              <span className="text-xs font-medium">Accent Color</span>
+              Appearance
             </div>
-            <div className="flex gap-2">
-              {ACCENT_COLORS.map((ac) => (
-                <button
-                  key={ac.name}
-                  onClick={() => onUpdateTheme({ ...themeSettings, accentColor: ac.name })}
-                  className={`w-6 h-6 rounded-full border-2 transition-all ${
-                    themeSettings.accentColor === ac.name ? 'border-slate-400 dark:border-slate-500 scale-110' : 'border-transparent hover:scale-105'
-                  }`}
-                  style={{ backgroundColor: ac.color }}
-                  title={ac.name}
-                />
-              ))}
-            </div>
-          </div>
+            <motion.div
+              animate={{ rotate: isThemeExpanded ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+              className="text-slate-400"
+            >
+              <ChevronDown size={14} />
+            </motion.div>
+          </button>
+
+          <AnimatePresence initial={false}>
+            {isThemeExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="space-y-4 pt-3 mt-3 border-t border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400">
+                      {themeSettings.isDarkMode ? <Moon size={14} /> : <Sun size={14} />}
+                      <span className="text-xs font-medium">Dark Mode</span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={themeSettings.isDarkMode}
+                        onChange={(e) => onUpdateTheme({ ...themeSettings, isDarkMode: e.target.checked })}
+                      />
+                      <div className="w-7 h-4 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 dark:after:border-slate-600 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-accent-600"></div>
+                    </label>
+                  </div>
+
+                  <div className="px-1 space-y-2">
+                    <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 mb-2">
+                      <Palette size={14} />
+                      <span className="text-xs font-medium">Accent Color</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {ACCENT_COLORS.map((ac) => (
+                        <button
+                          key={ac.name}
+                          onClick={() => onUpdateTheme({ ...themeSettings, accentColor: ac.name })}
+                          className={`w-6 h-6 rounded-full border-2 transition-all ${
+                            themeSettings.accentColor === ac.name ? 'border-slate-400 dark:border-slate-500 scale-110 shadow-sm' : 'border-transparent hover:scale-105'
+                          }`}
+                          style={{ backgroundColor: ac.color }}
+                          title={ac.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 pt-2">
           <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden border border-slate-200 dark:border-slate-700">
             <img 
               src="https://api.dicebear.com/7.x/avataaars/svg?seed=ShinChven@gmail.com&backgroundColor=c0aede" 
