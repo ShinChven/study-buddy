@@ -42,7 +42,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:5173") // Vite default
+        policy.WithOrigins("http://localhost:3000", "http://127.0.0.1:3000") // Actual frontend port
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -111,6 +111,7 @@ builder.Services.AddScoped<IFollowUpService, FollowUpService>();
 
 var app = builder.Build();
 
+app.UseCors(); // Move to top
 app.UseIpRateLimiting();
 
 // Configure the HTTP request pipeline.
@@ -118,15 +119,43 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-
-app.UseHttpsRedirection();
-app.UseCors();
+else 
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<ChatHub>("/hubs/chat");
+
+// Seed Admin User
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+
+    if (!await roleManager.RoleExistsAsync("Admin"))
+    {
+        await roleManager.CreateAsync(new IdentityRole<Guid>("Admin"));
+    }
+
+    var adminEmail = "admin@edubuddy.com";
+    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+    if (adminUser == null)
+    {
+        adminUser = new User
+        {
+            UserName = adminEmail,
+            Email = adminEmail,
+            DisplayName = "System Admin",
+            EmailConfirmed = true
+        };
+        await userManager.CreateAsync(adminUser, "AdminPassword123!");
+        await userManager.AddToRoleAsync(adminUser, "Admin");
+    }
+}
 
 app.Run();
 

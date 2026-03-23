@@ -23,13 +23,4 @@ public class AuthController : ControllerBase
 
         return Ok(response);
     }
-
-    [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
-    {
-        var response = await _authService.RegisterAsync(request);
-        if (response == null) return BadRequest("Registration failed.");
-
-        return Ok(response);
-    }
 }

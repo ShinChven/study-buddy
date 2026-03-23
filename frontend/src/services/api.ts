@@ -1,6 +1,6 @@
 import * as signalR from "@microsoft/signalr";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5293'; // Update with your actual backend port
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5140';
 
 class ApiService {
     private connection: signalR.HubConnection | null = null;

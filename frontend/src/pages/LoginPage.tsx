@@ -21,11 +21,7 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      if (isLogin) {
-        await login(formData.email, formData.password);
-      } else {
-        await register(formData.email, formData.password, formData.displayName);
-      }
+      await login(formData.email, formData.password);
       navigate('/study/new');
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your credentials.');
@@ -52,20 +48,6 @@ export const LoginPage: React.FC = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
-          {!isLogin && (
-            <div className="space-y-1.5 md:space-y-2">
-              <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Display Name</label>
-              <input 
-                type="text" 
-                required
-                placeholder="Your Name"
-                value={formData.displayName}
-                onChange={(e) => setFormData({...formData, displayName: e.target.value})}
-                className="w-full px-4 py-3 md:py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent transition-all dark:text-slate-100 text-sm md:text-base"
-              />
-            </div>
-          )}
-
           <div className="space-y-1.5 md:space-y-2">
             <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Email Address</label>
             <input 
@@ -95,17 +77,12 @@ export const LoginPage: React.FC = () => {
             disabled={loading}
             className="w-full py-3.5 md:py-4 bg-accent-600 text-white font-bold rounded-xl hover:bg-accent-700 transform hover:-translate-y-0.5 transition-all shadow-lg shadow-accent-100 active:scale-95 text-sm md:text-base flex items-center justify-center gap-2 disabled:opacity-70 disabled:hover:translate-y-0"
           >
-            {loading ? <Loader2 className="animate-spin" size={20} /> : (isLogin ? 'Start Learning' : 'Create Account')}
+            {loading ? <Loader2 className="animate-spin" size={20} /> : 'Start Learning'}
           </button>
         </form>
 
-        <p className="mt-6 md:mt-8 text-center text-slate-400 dark:text-slate-500 text-sm font-medium">
-          {isLogin ? "Don't have an account?" : "Already have an account?"} <span 
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-accent-600 dark:text-accent-400 cursor-pointer hover:underline font-bold"
-          >
-            {isLogin ? 'Sign up' : 'Log in'}
-          </span>
+        <p className="mt-6 md:mt-8 text-center text-slate-400 dark:text-slate-500 text-sm font-medium italic">
+          Contact your administrator for account access.
         </p>
       </div>
     </div>
