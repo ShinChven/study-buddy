@@ -57,9 +57,14 @@ export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => 
                 itemStyle={{ color: isDark ? '#f8fafc' : '#1e293b' }}
                 formatter={(value: any) => [value.toLocaleString(), 'Value']}
               />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]} animationDuration={1500} fill={accentColor}>
-                {config.data.length > 1 && config.data.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={config.type === 'pie' ? COLORS[index % COLORS.length] : accentColor} />
+              <Bar 
+                dataKey="value" 
+                radius={[4, 4, 0, 0]} 
+                animationDuration={1500}
+                background={{ fill: 'transparent' }}
+              >
+                {config.data.map((_, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Bar>
             </BarChart>
