@@ -258,7 +258,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <Palette size={14} />
                       <span className="text-xs font-medium">Accent Color</span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 justify-center">
                       {ACCENT_COLORS.map((ac) => (
                         <button
                           key={ac.name}
