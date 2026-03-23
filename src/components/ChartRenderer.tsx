@@ -24,20 +24,27 @@ export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => 
   const accentColor = getAccentHex(theme.accentColor);
   const isDark = theme.isDarkMode;
 
+  const formatNumber = (value: number) => {
+    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+    return value.toString();
+  };
+
   const renderChart = () => {
     switch (config.type) {
       case 'bar':
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={config.data}>
+            <BarChart data={config.data} margin={{ left: 20, right: 10, top: 10, bottom: 10 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#334155" : "#f0f0f0"} />
-              <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#94a3b8' : '#64748b' }} />
+              <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 12 }} />
               <YAxis 
                 axisLine={false} 
                 tickLine={false} 
-                tick={{ fill: isDark ? '#94a3b8' : '#64748b' }}
-                tickFormatter={(value) => `${value}`}
-                label={{ value: config.yAxisLabel, angle: -90, position: 'insideLeft', fill: isDark ? '#94a3b8' : '#64748b' }} 
+                width={60}
+                tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                tickFormatter={formatNumber}
+                label={config.yAxisLabel ? { value: config.yAxisLabel, angle: -90, position: 'insideLeft', fill: isDark ? '#94a3b8' : '#64748b', style: { textAnchor: 'middle' }, offset: 0 } : undefined} 
               />
               <Tooltip 
                 contentStyle={{ 
@@ -48,7 +55,7 @@ export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => 
                   color: isDark ? '#f8fafc' : '#1e293b'
                 }}
                 itemStyle={{ color: isDark ? '#f8fafc' : '#1e293b' }}
-                formatter={(value: any) => [value, 'Value']}
+                formatter={(value: any) => [value.toLocaleString(), 'Value']}
               />
               <Bar dataKey="value" radius={[4, 4, 0, 0]} animationDuration={1500} fill={accentColor}>
                 {config.data.length > 1 && config.data.map((_, index) => (
@@ -61,14 +68,16 @@ export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => 
       case 'line':
         return (
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={config.data}>
+            <LineChart data={config.data} margin={{ left: 20, right: 10, top: 10, bottom: 10 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#334155" : "#f0f0f0"} />
-              <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#94a3b8' : '#64748b' }} />
+              <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 12 }} />
               <YAxis 
                 axisLine={false} 
                 tickLine={false} 
-                tick={{ fill: isDark ? '#94a3b8' : '#64748b' }}
-                tickFormatter={(value) => `${value}`}
+                width={60}
+                tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                tickFormatter={formatNumber}
+                label={config.yAxisLabel ? { value: config.yAxisLabel, angle: -90, position: 'insideLeft', fill: isDark ? '#94a3b8' : '#64748b', style: { textAnchor: 'middle' }, offset: 0 } : undefined}
               />
               <Tooltip 
                 contentStyle={{ 
@@ -79,7 +88,7 @@ export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => 
                   color: isDark ? '#f8fafc' : '#1e293b'
                 }}
                 itemStyle={{ color: isDark ? '#f8fafc' : '#1e293b' }}
-                formatter={(value: any) => [value, 'Value']}
+                formatter={(value: any) => [value.toLocaleString(), 'Value']}
               />
               <Line type="monotone" dataKey="value" stroke={accentColor} strokeWidth={3} dot={{ r: 6, fill: accentColor }} animationDuration={1500} />
             </LineChart>
@@ -87,8 +96,8 @@ export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => 
         );
       case 'pie':
         return (
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
+          <ResponsiveContainer width="100%" height={320}>
+            <PieChart margin={{ top: 30, bottom: 30, left: 10, right: 10 }}>
               <Pie
                 data={config.data}
                 cx="50%"
@@ -99,6 +108,33 @@ export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => 
                 dataKey="value"
                 nameKey="label"
                 animationDuration={1500}
+                label={({
+                  cx,
+                  cy,
+                  midAngle,
+                  innerRadius,
+                  outerRadius,
+                  value
+                }) => {
+                  const RADIAN = Math.PI / 180;
+                  // Reduced offset to keep labels inside container
+                  const radius = outerRadius + 25;
+                  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+        
+                  return (
+                    <text
+                      x={x}
+                      y={y}
+                      fill={isDark ? '#94a3b8' : '#64748b'}
+                      textAnchor={x > cx ? 'start' : 'end'}
+                      dominantBaseline="central"
+                      className="text-xs font-bold"
+                    >
+                      {value}%
+                    </text>
+                  );
+                }}
               >
                 {config.data.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -113,9 +149,9 @@ export const ChartRenderer: React.FC<{ config: ChartConfig }> = ({ config }) => 
                   color: isDark ? '#f8fafc' : '#1e293b'
                 }}
                 itemStyle={{ color: isDark ? '#f8fafc' : '#1e293b' }}
-                formatter={(value: any) => [value, 'Value']}
+                formatter={(value: number) => [`${value}%`, 'Value']}
               />
-              <Legend wrapperStyle={{ color: isDark ? '#94a3b8' : '#64748b' }} />
+              <Legend wrapperStyle={{ color: isDark ? '#94a3b8' : '#64748b', paddingTop: '20px' }} />
             </PieChart>
           </ResponsiveContainer>
         );
