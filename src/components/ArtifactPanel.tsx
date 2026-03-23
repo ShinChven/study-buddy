@@ -99,10 +99,10 @@ export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({ messages, settings
                     scale: 1 - (arr.length - 1 - idx) * 0.05,
                     zIndex: idx
                   }}
-                  className="absolute inset-0 bg-white border border-indigo-100 rounded-2xl p-4 shadow-sm flex flex-col justify-center"
+                  className="absolute inset-0 bg-white border border-indigo-100 rounded-2xl p-4 shadow-sm flex flex-col"
                 >
                   <h3 className="font-bold text-indigo-900 text-sm line-clamp-1">{card.title}</h3>
-                  <p className="text-xs text-slate-600 mt-1 line-clamp-2">{card.knowledge}</p>
+                  <p className="text-xs text-slate-600 mt-1 line-clamp-3">{card.knowledge}</p>
                 </motion.div>
               ))}
             </div>
