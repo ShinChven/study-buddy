@@ -10,7 +10,7 @@ import { ChatWindow } from '../components/ChatWindow';
 import { ArtifactPanel } from '../components/ArtifactPanel';
 import { Message, ChatSession, FollowUpSettings } from '../types';
 import { chatWithGeminiStream, generateFollowUp } from '../services/gemini';
-import { getSessions, getSessionById, updateSession } from '../services/storage';
+import { getSessions, getSessionById, updateSession, deleteSession } from '../services/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { useTheme } from '../components/ThemeProvider';
 
@@ -59,6 +59,14 @@ export const ChatPage: React.FC = () => {
 
   const handleStopGeneration = () => {
     shouldStopRef.current = true;
+  };
+
+  const handleDeleteSession = (id: string) => {
+    deleteSession(id);
+    setSessions(getSessions());
+    if (activeSession?.id === id) {
+      navigate('/study/new');
+    }
   };
 
   const handleSendMessage = async (content: string, isAuto = false, sessionOverride?: ChatSession) => {
@@ -196,6 +204,7 @@ export const ChatPage: React.FC = () => {
         sessions={sessions} 
         activeSessionId={conversation_id || ''} 
         onSelectSession={(id) => navigate(`/study/${id}`)}
+        onDeleteSession={handleDeleteSession}
         onNewChat={handleNewChat}
         followUpSettings={followUpSettings}
         onUpdateSettings={setFollowUpSettings}

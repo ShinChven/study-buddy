@@ -4,7 +4,7 @@ import { Sidebar } from '../components/Sidebar';
 import { Send, Sparkles } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatSession, FollowUpSettings } from '../types';
-import { getSessions, updateSession } from '../services/storage';
+import { getSessions, updateSession, deleteSession } from '../services/storage';
 import { useTheme } from '../components/ThemeProvider';
 
 export const NewChatPage: React.FC = () => {
@@ -21,6 +21,11 @@ export const NewChatPage: React.FC = () => {
   useEffect(() => {
     setSessions(getSessions());
   }, []);
+
+  const handleDeleteSession = (id: string) => {
+    deleteSession(id);
+    setSessions(getSessions());
+  };
 
   const handleStartChat = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +61,7 @@ export const NewChatPage: React.FC = () => {
         sessions={sessions} 
         activeSessionId="" 
         onSelectSession={(id) => navigate(`/study/${id}`)}
+        onDeleteSession={handleDeleteSession}
         onNewChat={handleNewChat}
         followUpSettings={followUpSettings}
         onUpdateSettings={setFollowUpSettings}

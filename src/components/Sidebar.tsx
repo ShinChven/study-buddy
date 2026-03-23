@@ -1,11 +1,13 @@
 import React from 'react';
 import { ChatSession, FollowUpSettings, ThemeSettings, AccentColor, ACCENT_COLORS } from '../types';
-import { MessageSquare, History, Plus, GraduationCap, Moon, Sun, Palette, Settings2 } from 'lucide-react';
+import { MessageSquare, History, Plus, GraduationCap, Moon, Sun, Palette, Settings2, Trash2, AlertCircle, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface SidebarProps {
   sessions: ChatSession[];
   activeSessionId: string;
   onSelectSession: (id: string) => void;
+  onDeleteSession: (id: string) => void;
   onNewChat: () => void;
   followUpSettings: FollowUpSettings;
   onUpdateSettings: (settings: FollowUpSettings) => void;
@@ -13,17 +15,93 @@ interface SidebarProps {
   onUpdateTheme: (settings: ThemeSettings) => void;
 }
 
+const DeleteConfirmModal = ({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  title 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onConfirm: () => void; 
+  title: string 
+}) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-sm overflow-hidden"
+          >
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Delete Conversation?</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
+                Are you sure you want to delete <span className="font-semibold text-slate-700 dark:text-slate-200">"{title}"</span>? This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={onClose}
+                  className="flex-1 py-3 px-4 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    onConfirm();
+                    onClose();
+                  }}
+                  className="flex-1 py-3 px-4 bg-rose-500 text-white font-bold rounded-2xl hover:bg-rose-600 transition-colors shadow-lg shadow-rose-200 dark:shadow-none"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 export const Sidebar: React.FC<SidebarProps> = ({ 
   sessions, 
   activeSessionId, 
   onSelectSession, 
+  onDeleteSession,
   onNewChat, 
   followUpSettings, 
   onUpdateSettings,
   themeSettings,
   onUpdateTheme
 }) => {
-  const [showSettings, setShowSettings] = React.useState(false);
+  const [deleteId, setDeleteId] = React.useState<string | null>(null);
+
+  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setDeleteId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deleteId) {
+      onDeleteSession(deleteId);
+      setDeleteId(null);
+    }
+  };
+
+  const sessionToDelete = sessions.find(s => s.id === deleteId);
 
   return (
     <div className="w-72 h-full bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex flex-col">
@@ -53,17 +131,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             key={session.id}
             onClick={() => onSelectSession(session.id)}
-            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left group ${
+            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left group relative ${
               activeSessionId === session.id
                 ? 'bg-accent-600 text-white shadow-md'
                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           >
             <MessageSquare size={18} className={activeSessionId === session.id ? 'text-accent-200' : 'text-slate-400 dark:text-slate-500'} />
-            <span className="truncate font-medium text-sm">{session.title}</span>
+            <span className="truncate font-medium text-sm pr-6">{session.title}</span>
+            <button
+              onClick={(e) => handleDeleteClick(e, session.id)}
+              className={`absolute right-2 opacity-0 group-hover:opacity-100 p-1.5 rounded-lg transition-all hover:bg-black/10 dark:hover:bg-white/10 ${
+                activeSessionId === session.id ? 'text-accent-200' : 'text-slate-400 hover:text-rose-500'
+              }`}
+              title="Delete conversation"
+            >
+              <Trash2 size={14} />
+            </button>
           </button>
         ))}
       </div>
+
+      <DeleteConfirmModal 
+        isOpen={!!deleteId} 
+        onClose={() => setDeleteId(null)} 
+        onConfirm={confirmDelete}
+        title={sessionToDelete?.title || ''}
+      />
 
       <div className="p-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
         <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">

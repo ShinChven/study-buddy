@@ -57,3 +57,9 @@ export const updateSession = (session: ChatSession) => {
   }
   saveSessions(sessions);
 };
+
+export const deleteSession = (id: string) => {
+  const sessions = getSessions();
+  const filtered = sessions.filter(s => s.id !== id);
+  saveSessions(filtered);
+};
