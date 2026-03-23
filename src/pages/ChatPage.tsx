@@ -38,6 +38,28 @@ export const ChatPage: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
   const [isArtifactOpen, setIsArtifactOpen] = useState(window.innerWidth >= 1024);
 
+  // Handle responsive sidebar collapse/expand
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setIsSidebarOpen(false);
+      } else if (window.innerWidth >= 768 && !isSidebarOpen) {
+        // Only auto-open if it wasn't manually closed (optional, but let's follow user's request for "automatically")
+        // To be safe and simple, let's just sync with breakpoints
+        setIsSidebarOpen(true);
+      }
+      
+      if (window.innerWidth < 1024) {
+        setIsArtifactOpen(false);
+      } else if (window.innerWidth >= 1024 && !isArtifactOpen) {
+        setIsArtifactOpen(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isSidebarOpen, isArtifactOpen]);
+
   // Sync active session with URL parameter and sessions from provider
   useEffect(() => {
     if (conversation_id) {
