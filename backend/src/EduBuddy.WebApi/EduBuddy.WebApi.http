@@ -1,0 +1,6 @@
+@EduBuddy.WebApi_HostAddress = http://localhost:5140
+
+GET {{EduBuddy.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
