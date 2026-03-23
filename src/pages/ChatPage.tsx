@@ -113,12 +113,12 @@ export const ChatPage: React.FC = () => {
         activeSessionId={conversation_id || ''} 
         onSelectSession={(id) => {
           navigate(`/study/${id}`);
-          setIsSidebarOpen(false);
+          if (window.innerWidth < 768) setIsSidebarOpen(false);
         }}
         onDeleteSession={handleDeleteSession}
         onNewChat={() => {
           handleNewChat();
-          setIsSidebarOpen(false);
+          if (window.innerWidth < 768) setIsSidebarOpen(false);
         }}
         followUpSettings={followUpSettings}
         onUpdateSettings={setFollowUpSettings}
