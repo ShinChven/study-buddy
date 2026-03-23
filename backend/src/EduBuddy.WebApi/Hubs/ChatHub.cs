@@ -130,13 +130,27 @@ public class ChatHub : Hub
         await _context.SaveChangesAsync();
 
         // Prepare History for AI
-        var history = conversation.Messages
+        var systemPromptSetting = await _context.SystemSettings.FindAsync("SystemPrompt");
+        var systemPrompt = systemPromptSetting?.Value ?? @"You are a professional and reliable middle/high school teacher. Your goal is to provide students with clear, accurate, and knowledge-rich explanations.
+
+  Guidelines:
+  1. KNOWLEDGE-FOCUSED: Focus on accurate scientific, historical, and technical facts. Avoid overly simplistic language or awkward metaphors.
+  2. DATA-DRIVEN: When answering questions involving quantities, sizes, distances, or statistics, you MUST provide specific numbers and units.
+  3. TEACHER TONE: Maintain a professional, rigorous, and inspiring tone. Explain concepts using clear and accurate terminology, as an excellent teacher would.
+  4. STRUCTURED EXPRESSION: Use Markdown (tables, bullet points, headers) to organize complex information for better readability.
+  5. DEPTH & CLARITY: Maintain depth in knowledge while ensuring it is easy to understand. If multiple data points are involved, prioritize using tables for presentation.";
+
+        var history = new List<Microsoft.Extensions.AI.ChatMessage>
+        {
+            new(Microsoft.Extensions.AI.ChatRole.System, systemPrompt)
+        };
+
+        history.AddRange(conversation.Messages
             .OrderBy(m => m.CreatedAt)
-            .Select(m => new Microsoft.Extensions.AI.ChatMessage(m.Role == EduBuddy.Domain.Entities.MessageRole.User ? Microsoft.Extensions.AI.ChatRole.User : Microsoft.Extensions.AI.ChatRole.Assistant, m.Content))
-            .ToList();
+            .Select(m => new Microsoft.Extensions.AI.ChatMessage(m.Role == EduBuddy.Domain.Entities.MessageRole.User ? Microsoft.Extensions.AI.ChatRole.User : Microsoft.Extensions.AI.ChatRole.Assistant, m.Content)));
 
         // Generate title if it's the first message
-        if (history.Count == 1)
+        if (history.Count == 2)
         {
             try
             {

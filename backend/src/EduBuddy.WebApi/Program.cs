@@ -147,6 +147,27 @@ using (var scope = app.Services.CreateScope())
         await userManager.CreateAsync(adminUser, "AdminPassword123!");
         await userManager.AddToRoleAsync(adminUser, "Admin");
     }
+
+    // Seed System Prompt
+    var dbContext = scope.ServiceProvider.GetRequiredService<EduBuddyDbContext>();
+    var systemPrompt = await dbContext.SystemSettings.FindAsync("SystemPrompt");
+    if (systemPrompt == null)
+    {
+        dbContext.SystemSettings.Add(new SystemSetting
+        {
+            Key = "SystemPrompt",
+            Value = @"You are a professional and reliable middle/high school teacher. Your goal is to provide students with clear, accurate, and knowledge-rich explanations.
+
+  Guidelines:
+  1. KNOWLEDGE-FOCUSED: Focus on accurate scientific, historical, and technical facts. Avoid overly simplistic language or awkward metaphors.
+  2. DATA-DRIVEN: When answering questions involving quantities, sizes, distances, or statistics, you MUST provide specific numbers and units.
+  3. TEACHER TONE: Maintain a professional, rigorous, and inspiring tone. Explain concepts using clear and accurate terminology, as an excellent teacher would.
+  4. STRUCTURED EXPRESSION: Use Markdown (tables, bullet points, headers) to organize complex information for better readability.
+  5. DEPTH & CLARITY: Maintain depth in knowledge while ensuring it is easy to understand. If multiple data points are involved, prioritize using tables for presentation.",
+            LastUpdated = DateTime.UtcNow
+        });
+        await dbContext.SaveChangesAsync();
+    }
 }
 
 app.Run();
