@@ -3,18 +3,19 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle, XCircle, Trophy, ArrowRight, RotateCcw } from 'lucide-react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Message, FlipCard } from '../types';
-import { getSessionById } from '../services/storage';
+import { useChat } from '../components/ChatProvider';
 
 export const TestPage: React.FC = () => {
   const { conversation_id } = useParams<{ conversation_id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
+  const { sessions } = useChat();
   
   const [messages, setMessages] = useState<Message[]>([]);
 
   useEffect(() => {
     if (conversation_id) {
-      const session = getSessionById(conversation_id);
+      const session = sessions.find(s => s.id === conversation_id);
       if (session) {
         setMessages(session.messages);
       } else if (location.state?.messages) {
@@ -23,7 +24,7 @@ export const TestPage: React.FC = () => {
     } else if (location.state?.messages) {
       setMessages(location.state.messages);
     }
-  }, [conversation_id, location.state]);
+  }, [conversation_id, sessions, location.state]);
 
   const flipCards = useMemo(() => {
     const cards: FlipCard[] = [];

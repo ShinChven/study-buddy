@@ -9,16 +9,20 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, X, Presentation, BookOpen } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { getSessionById } from '../services/storage';
 import { KeynotePage as KeynotePageType } from '../types';
+import { useChat } from '../components/ChatProvider';
 
 export const KeynotePage: React.FC = () => {
   const { conversation_id, message_id } = useParams<{ conversation_id: string; message_id: string }>();
   const navigate = useNavigate();
+  const { sessions } = useChat();
   const [allPages, setAllPages] = useState<Array<KeynotePageType & { deckTitle: string }>>([]);
   const [currentPage, setCurrentPage] = useState(0);
 
-  const session = useMemo(() => conversation_id ? getSessionById(conversation_id) : null, [conversation_id]);
+  const session = useMemo(() => {
+    if (!conversation_id) return null;
+    return sessions.find(s => s.id === conversation_id) || null;
+  }, [conversation_id, sessions]);
 
   useEffect(() => {
     if (session) {
@@ -43,10 +47,10 @@ export const KeynotePage: React.FC = () => {
       } else {
         navigate(`/study/${conversation_id}`);
       }
-    } else if (conversation_id) {
+    } else if (conversation_id && sessions.length > 0) {
       navigate('/study/new');
     }
-  }, [session, message_id, navigate, conversation_id]);
+  }, [session, message_id, navigate, conversation_id, sessions]);
 
   const handleNext = () => {
     if (currentPage < allPages.length - 1) {
@@ -68,7 +72,7 @@ export const KeynotePage: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [allPages, currentPage]);
+  }, [allPages, currentPage, conversation_id, navigate]);
 
   if (allPages.length === 0) return null;
 

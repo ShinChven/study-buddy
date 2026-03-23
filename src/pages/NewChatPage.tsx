@@ -1,16 +1,21 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { Send, Sparkles } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatSession, FollowUpSettings } from '../types';
-import { getSessions, updateSession, deleteSession } from '../services/storage';
 import { useTheme } from '../components/ThemeProvider';
+import { useChat } from '../components/ChatProvider';
 
 export const NewChatPage: React.FC = () => {
   const { theme, updateTheme } = useTheme();
   const navigate = useNavigate();
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const { sessions, deleteSession, updateSession } = useChat();
   const [input, setInput] = useState('');
   const [followUpSettings, setFollowUpSettings] = useState<FollowUpSettings>({
     debugMode: false,
@@ -18,13 +23,8 @@ export const NewChatPage: React.FC = () => {
     threshold: 7,
   });
 
-  useEffect(() => {
-    setSessions(getSessions());
-  }, []);
-
   const handleDeleteSession = (id: string) => {
     deleteSession(id);
-    setSessions(getSessions());
   };
 
   const handleStartChat = (e: React.FormEvent) => {
@@ -51,7 +51,6 @@ export const NewChatPage: React.FC = () => {
   };
 
   const handleNewChat = () => {
-    // Already on new chat page, just clear input if needed
     setInput('');
   };
 
