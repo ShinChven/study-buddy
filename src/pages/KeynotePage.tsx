@@ -3,39 +3,53 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, X, Presentation, BookOpen } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { getSessionById } from '../services/storage';
-import { Keynote } from '../types';
+import { KeynotePage as KeynotePageType } from '../types';
 
 export const KeynotePage: React.FC = () => {
   const { conversation_id, message_id } = useParams<{ conversation_id: string; message_id: string }>();
   const navigate = useNavigate();
-  const [keynote, setKeynote] = useState<Keynote | null>(null);
+  const [allPages, setAllPages] = useState<Array<KeynotePageType & { deckTitle: string }>>([]);
   const [currentPage, setCurrentPage] = useState(0);
 
+  const session = useMemo(() => conversation_id ? getSessionById(conversation_id) : null, [conversation_id]);
+
   useEffect(() => {
-    if (conversation_id && message_id) {
-      const session = getSessionById(conversation_id);
-      if (session) {
-        const message = session.messages.find(m => m.id === message_id);
-        if (message?.followUp?.keynotes) {
-          setKeynote(message.followUp.keynotes);
-        } else {
-          navigate(`/study/${conversation_id}`);
+    if (session) {
+      const pages: Array<KeynotePageType & { deckTitle: string }> = [];
+      let entryPageIndex = 0;
+
+      session.messages.forEach(m => {
+        if (m.followUp?.keynotes) {
+          const isEntryMessage = m.id === message_id;
+          if (isEntryMessage) {
+            entryPageIndex = pages.length;
+          }
+          m.followUp.keynotes.pages.forEach(p => {
+            pages.push({ ...p, deckTitle: m.followUp!.keynotes!.title });
+          });
         }
+      });
+
+      if (pages.length > 0) {
+        setAllPages(pages);
+        setCurrentPage(entryPageIndex);
       } else {
-        navigate('/study/new');
+        navigate(`/study/${conversation_id}`);
       }
+    } else if (conversation_id) {
+      navigate('/study/new');
     }
-  }, [conversation_id, message_id, navigate]);
+  }, [session, message_id, navigate, conversation_id]);
 
   const handleNext = () => {
-    if (keynote && currentPage < keynote.pages.length - 1) {
+    if (currentPage < allPages.length - 1) {
       setCurrentPage(prev => prev + 1);
     }
   };
@@ -54,11 +68,11 @@ export const KeynotePage: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [keynote, currentPage]);
+  }, [allPages, currentPage]);
 
-  if (!keynote) return null;
+  if (allPages.length === 0) return null;
 
-  const page = keynote.pages[currentPage];
+  const page = allPages[currentPage];
 
   return (
     <div className="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center p-4 md:p-12 overflow-hidden font-sans">
@@ -69,8 +83,8 @@ export const KeynotePage: React.FC = () => {
             <Presentation size={24} />
           </div>
           <div>
-            <h1 className="text-white font-bold text-lg leading-tight">{keynote.title}</h1>
-            <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold">Study Keynotes • Page {currentPage + 1} of {keynote.pages.length}</p>
+            <h1 className="text-white font-bold text-lg leading-tight">{page.deckTitle}</h1>
+            <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold">Study Keynotes • Slide {currentPage + 1} of {allPages.length}</p>
           </div>
         </div>
         <button 
@@ -113,7 +127,7 @@ export const KeynotePage: React.FC = () => {
           <motion.div 
             className="h-full bg-accent-600"
             initial={false}
-            animate={{ width: `${((currentPage + 1) / keynote.pages.length) * 100}%` }}
+            animate={{ width: `${((currentPage + 1) / allPages.length) * 100}%` }}
           />
         </div>
       </main>
@@ -128,12 +142,12 @@ export const KeynotePage: React.FC = () => {
           <ChevronLeft size={32} />
         </button>
         
-        <div className="flex gap-2">
-          {keynote.pages.map((_, idx) => (
+        <div className="flex gap-2 max-w-md overflow-x-auto p-2 scrollbar-hide">
+          {allPages.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentPage(idx)}
-              className={`w-3 h-3 rounded-full transition-all ${
+              className={`flex-shrink-0 w-3 h-3 rounded-full transition-all ${
                 idx === currentPage ? 'bg-accent-600 w-8' : 'bg-white/20 hover:bg-white/40'
               }`}
             />
@@ -142,7 +156,7 @@ export const KeynotePage: React.FC = () => {
 
         <button
           onClick={handleNext}
-          disabled={currentPage === keynote.pages.length - 1}
+          disabled={currentPage === allPages.length - 1}
           className="w-16 h-16 rounded-full bg-white/10 border border-white/10 flex items-center justify-center text-white hover:bg-white/20 disabled:opacity-20 disabled:cursor-not-allowed transition-all backdrop-blur-sm"
         >
           <ChevronRight size={32} />
