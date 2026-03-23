@@ -135,6 +135,26 @@ public class ChatHub : Hub
             .Select(m => new Microsoft.Extensions.AI.ChatMessage(m.Role == EduBuddy.Domain.Entities.MessageRole.User ? Microsoft.Extensions.AI.ChatRole.User : Microsoft.Extensions.AI.ChatRole.Assistant, m.Content))
             .ToList();
 
+        // Generate title if it's the first message
+        if (history.Count == 1)
+        {
+            try
+            {
+                var titlePrompt = $"Summarize the following message into a concise, professional title (max 5 words) for a chat conversation:\n\"{userContent}\"";
+                var titleMessages = new List<Microsoft.Extensions.AI.ChatMessage> { new(Microsoft.Extensions.AI.ChatRole.User, titlePrompt) };
+                var titleResponse = await _chatClient.GetResponseAsync(titleMessages);
+                var generatedTitle = titleResponse.Text?.Trim('"', ' ', '\n', '\r');
+                if (!string.IsNullOrEmpty(generatedTitle))
+                {
+                    conversation.Title = generatedTitle;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to generate title: {ex.Message}");
+            }
+        }
+
         // Stream AI Response
         var fullContent = "";
         await foreach (var chunk in _chatClient.GetStreamingResponseAsync(history))
