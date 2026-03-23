@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, BookOpen, GitBranch, Trophy, X } from 'lucide-react';
+import { BookOpen, Trophy, X, Layout, Presentation } from 'lucide-react';
 import { Message, FollowUpSettings } from '../types';
+import { useNavigate, useParams } from 'react-router-dom';
 
 interface ArtifactPanelProps {
   messages: Message[];
@@ -10,16 +11,16 @@ interface ArtifactPanelProps {
 }
 
 export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({ messages, settings, onTakeTest }) => {
+  const navigate = useNavigate();
+  const { conversation_id } = useParams<{ conversation_id: string }>();
   const [showAllCards, setShowAllCards] = useState(false);
 
-  const artifacts = messages.filter(m => {
-    if (!m.followUp) return false;
-    
-    const hasValidChart = m.followUp.chart && (m.followUp.chart.confidence === undefined || m.followUp.chart.confidence >= settings.threshold || settings.showSkipped);
-    const hasValidMermaid = m.followUp.mermaid && (m.followUp.mermaid.confidence === undefined || m.followUp.mermaid.confidence >= settings.threshold || settings.showSkipped);
-    
-    return hasValidChart || hasValidMermaid;
-  });
+  const keynotes = messages
+    .filter(m => m.followUp?.keynotes)
+    .map(m => ({
+      messageId: m.id,
+      keynotes: m.followUp!.keynotes!
+    }));
 
   const flipCards = messages
     .filter(m => m.followUp?.flipCard)
@@ -29,54 +30,35 @@ export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({ messages, settings
     <div className="w-80 h-full bg-white dark:bg-slate-900 border-l border-slate-100 dark:border-slate-800 p-6 flex flex-col gap-8 overflow-y-auto relative">
       <section>
         <div className="flex items-center gap-2 text-accent-600 dark:text-accent-400 font-bold mb-4">
-          <Sparkles size={20} />
-          <h2>Learning Artifacts</h2>
+          <Presentation size={20} />
+          <h2>Study Keynotes</h2>
         </div>
         <div className="space-y-4">
-          {artifacts.length > 0 ? (
-            artifacts.map((m, i) => {
-              const isChartSkipped = m.followUp?.chart?.confidence !== undefined && m.followUp.chart.confidence < settings.threshold;
-              const isMermaidSkipped = m.followUp?.mermaid?.confidence !== undefined && m.followUp.mermaid.confidence < settings.threshold;
-              
-              return (
-                <motion.div
-                  key={m.id}
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className={`p-4 rounded-2xl border ${
-                    (isChartSkipped || isMermaidSkipped) 
-                      ? 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30 opacity-70 grayscale' 
-                      : 'bg-accent-50 dark:bg-accent-900/20 border-accent-100 dark:border-accent-900/30'
-                  }`}
-                >
-                  <div className={`flex items-center gap-2 font-semibold mb-1 ${
-                    (isChartSkipped || isMermaidSkipped) ? 'text-red-700 dark:text-red-400' : 'text-accent-700 dark:text-accent-300'
-                  }`}>
-                    {m.followUp?.chart ? <BookOpen size={16} /> : <GitBranch size={16} />}
-                    <span className="text-sm flex-1">
-                      {m.followUp?.chart?.title || m.followUp?.mermaid?.title || "Artifact"}
-                    </span>
-                    {settings.debugMode && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                        (isChartSkipped || isMermaidSkipped) ? 'bg-red-200 dark:bg-red-900 text-red-800 dark:text-red-100' : 'bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100'
-                      }`}>
-                        {m.followUp?.chart?.confidence || m.followUp?.mermaid?.confidence}/10
-                      </span>
-                    )}
-                  </div>
-                  <p className={`text-xs ${
-                    (isChartSkipped || isMermaidSkipped) ? 'text-red-600 dark:text-red-400' : 'text-accent-600 dark:text-accent-400 opacity-80'
-                  }`}>
-                    {(isChartSkipped || isMermaidSkipped) 
-                      ? "Skipped due to low confidence score." 
-                      : `${m.followUp?.chart ? "Data visualization" : "Process diagram"} added to your knowledge base.`}
-                  </p>
-                </motion.div>
-              );
-            })
+          {keynotes.length > 0 ? (
+            keynotes.map((item, i) => (
+              <motion.div
+                key={item.messageId}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                whileHover={{ scale: 1.02 }}
+                onClick={() => navigate(`/study/${conversation_id}/keynotes/${item.messageId}`)}
+                className="p-4 rounded-2xl border bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800 cursor-pointer hover:border-accent-300 dark:hover:border-accent-700 transition-all group"
+              >
+                <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200 mb-1 group-hover:text-accent-600 transition-colors">
+                  <Layout size={16} />
+                  <span className="text-sm flex-1 truncate">{item.keynotes.title}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 font-medium">
+                    {item.keynotes.pages.length} Pages
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed italic">
+                  {item.keynotes.pages[0]?.shortDescription}
+                </p>
+              </motion.div>
+            ))
           ) : (
             <div className="text-center py-8 text-slate-400 dark:text-slate-500 italic text-sm">
-              No artifacts yet. Ask a question to start learning!
+              No keynotes yet. Start chatting to generate study slides!
             </div>
           )}
         </div>

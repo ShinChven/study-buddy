@@ -122,12 +122,22 @@ export async function generateFollowUp(assistantText: string): Promise<FollowUp 
      - options: An array of exactly 4 string options.
      - correctAnswerIndex: The index (0-3) of the correct option.
   
+  5. KEYNOTES: Summarize the response into a presentation-style "Keynote" deck.
+     - Decide how many pages (1 or more) are needed based on content complexity.
+     - Each page must be a concise, high-impact summary of a sub-topic.
+     - title: A professional title for the entire deck.
+     - pages: An array of objects, each with:
+       - title: Title for this specific page.
+       - content: The main knowledge point in Markdown (bullet points, bold text).
+       - shortDescription: A 1-sentence summary for the sidebar preview.
+  
   Return a JSON object:
   {
     "chart": { "type": "bar" | "line" | "pie", "title": string, "data": Array<{ "label": string, "value": number }>, "xAxisLabel"?: string, "yAxisLabel"?: string } | null,
     "mermaid": { "code": string, "title": string } | null,
     "suggestedQuestion": string,
-    "flipCard": { "title": string, "knowledge": string, "question": string, "options": string[], "correctAnswerIndex": number } | null
+    "flipCard": { "title": string, "knowledge": string, "question": string, "options": string[], "correctAnswerIndex": number } | null,
+    "keynotes": { "title": string, "pages": Array<{ "title": string, "content": string, "shortDescription": string }> } | null
   }
   
   Titles for charts and mermaid diagrams should be professional and descriptive.`;
@@ -181,7 +191,8 @@ export async function generateFollowUp(assistantText: string): Promise<FollowUp 
       chart: result.chart || undefined,
       mermaid: result.mermaid || undefined,
       suggestedQuestion: result.suggestedQuestion || undefined,
-      flipCard: result.flipCard || undefined
+      flipCard: result.flipCard || undefined,
+      keynotes: result.keynotes || undefined
     };
   } catch (e) {
     return null;

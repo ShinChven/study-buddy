@@ -53,11 +53,23 @@ export interface FlipCard {
   correctAnswerIndex: number;
 }
 
+export interface KeynotePage {
+  title: string;
+  content: string;
+  shortDescription: string;
+}
+
+export interface Keynote {
+  title: string;
+  pages: KeynotePage[];
+}
+
 export interface FollowUp {
   chart?: ChartConfig;
   mermaid?: MermaidConfig;
   suggestedQuestion?: string;
   flipCard?: FlipCard;
+  keynotes?: Keynote;
 }
 
 export interface Message {
