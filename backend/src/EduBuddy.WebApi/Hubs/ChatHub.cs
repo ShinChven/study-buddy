@@ -45,7 +45,7 @@ public class ChatHub : Hub
         var userMessage = new Message
         {
             ConversationId = conversationId,
-            Role = MessageRole.User,
+            Role = EduBuddy.Domain.Entities.MessageRole.User,
             Content = userContent,
             CreatedAt = DateTime.UtcNow
         };
@@ -55,14 +55,20 @@ public class ChatHub : Hub
         // Prepare History for AI
         var history = conversation.Messages
             .OrderBy(m => m.CreatedAt)
-            .Select(m => new ChatMessage(m.Role == MessageRole.User ? ChatRole.User : ChatRole.Assistant, m.Content))
+            .Select(m => new Microsoft.Extensions.AI.ChatMessage(m.Role == EduBuddy.Domain.Entities.MessageRole.User ? Microsoft.Extensions.AI.ChatRole.User : Microsoft.Extensions.AI.ChatRole.Assistant, m.Content))
             .ToList();
 
         // Setup Tool Calling
         var tools = new AITools();
         var options = new ChatOptions
         {
-            Tools = AIFunctionFactory.Create(tools).ToList()
+            Tools = new List<AITool>
+            {
+                AIFunctionFactory.Create(tools.ShowChart),
+                AIFunctionFactory.Create(tools.ShowDiagram),
+                AIFunctionFactory.Create(tools.ShowKeynote),
+                AIFunctionFactory.Create(tools.CreateFlipCard)
+            }
         };
 
         // Stream AI Response
@@ -87,7 +93,7 @@ public class ChatHub : Hub
         var assistantMessage = new Message
         {
             ConversationId = conversationId,
-            Role = MessageRole.Assistant,
+            Role = EduBuddy.Domain.Entities.MessageRole.Assistant,
             Content = fullContent,
             CreatedAt = DateTime.UtcNow,
             ParentMessageId = userMessage.Id
@@ -103,6 +109,18 @@ public class ChatHub : Hub
 
         _context.Messages.Add(assistantMessage);
         conversation.LastUpdated = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        // Log Usage (Simplified for now)
+        var usageLog = new UsageLog
+        {
+            UserId = userId,
+            ModelId = "gemini-3-flash-preview",
+            InputTokens = 0,
+            OutputTokens = 0,
+            Endpoint = "ChatHub.SendMessage"
+        };
+        _context.UsageLogs.Add(usageLog);
         await _context.SaveChangesAsync();
 
         await Clients.Caller.SendAsync("Finished", assistantMessage.Id);

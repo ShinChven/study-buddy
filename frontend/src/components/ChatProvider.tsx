@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Message, ChatSession, FollowUp } from '../types';
 import { chatWithGeminiStream, generateFollowUp } from '../services/gemini';
 import { apiService } from '../services/api';
+import { useAuth } from './AuthProvider';
 import { getSessions, updateSession as saveSession, deleteSession as removeSession, getSessionById } from '../services/storage';
 
 interface ChatContextType {
@@ -26,14 +27,29 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 const USE_BACKEND = import.meta.env.VITE_USE_BACKEND === 'true';
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [isGenerating, setIsGenerating] = useState<Record<string, boolean>>({});
   const [isFollowUpGenerating, setIsFollowUpGenerating] = useState<Record<string, boolean>>({});
   const stopRefs = useRef<Record<string, boolean>>({});
 
-  const refreshSessions = useCallback(() => {
-    setSessions(getSessions());
-  }, []);
+  const refreshSessions = useCallback(async () => {
+    if (USE_BACKEND && isAuthenticated) {
+      try {
+        const backendSessions = await apiService.getConversations();
+        setSessions(backendSessions.map((s: any) => ({
+          id: s.id,
+          title: s.title,
+          lastUpdated: new Date(s.lastUpdated),
+          messages: [] // Minimal info for sidebar
+        })));
+      } catch (err) {
+        console.error("Failed to fetch backend sessions", err);
+      }
+    } else {
+      setSessions(getSessions());
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     refreshSessions();
@@ -44,17 +60,46 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const updateSession = useCallback((session: ChatSession) => {
-    saveSession(session);
+    if (!USE_BACKEND) {
+        saveSession(session);
+    }
     refreshSessions();
   }, [refreshSessions]);
 
   const deleteSession = useCallback((id: string) => {
-    removeSession(id);
+    if (!USE_BACKEND) {
+        removeSession(id);
+    }
     refreshSessions();
   }, [refreshSessions]);
 
   const sendMessage = useCallback(async (sessionId: string, content: string, isAuto = false) => {
-    const session = getSessionById(sessionId);
+    let session = sessions.find(s => s.id === sessionId);
+    if (!session) {
+        if (USE_BACKEND) {
+            // Need to fetch full thread for backend session if not loaded
+            try {
+                const thread = await apiService.getThread(sessionId);
+                session = {
+                    id: sessionId,
+                    title: sessions.find(s => s.id === sessionId)?.title || "Chat",
+                    messages: thread.map((m: any) => ({
+                        id: m.id,
+                        role: m.role === 0 ? 'user' : 'assistant',
+                        content: m.content,
+                        timestamp: new Date(m.createdAt)
+                    })),
+                    lastUpdated: new Date()
+                };
+            } catch (err) {
+                console.error("Failed to load thread", err);
+                return;
+            }
+        } else {
+            session = getSessionById(sessionId);
+        }
+    }
+    
     if (!session || isGenerating[sessionId]) return;
 
     stopRefs.current[sessionId] = false;
@@ -86,7 +131,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       lastUpdated: new Date()
     };
     
-    updateSession(updatedSession);
+    // Optimistic update
+    setSessions(prev => prev.map(s => s.id === sessionId ? updatedSession : s));
 
     try {
       let assistantContent = '';
@@ -98,18 +144,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           (chunk) => {
             if (stopRefs.current[sessionId]) return;
             assistantContent += chunk;
-            const incrementalSession: ChatSession = {
-              ...updatedSession,
-              messages: updatedSession.messages.map(m => 
-                m.id === assistantMessageId ? { ...m, content: assistantContent } : m
-              ),
-              lastUpdated: new Date()
-            };
-            saveSession(incrementalSession);
-            setSessions(getSessions());
+            setSessions(prev => prev.map(s => s.id === sessionId ? {
+                ...s,
+                messages: s.messages.map(m => m.id === assistantMessageId ? { ...m, content: assistantContent } : m)
+            } : s));
+          },
+          (thinking) => {
+             // Handle thinking UI if needed
           },
           (messageId) => {
-             // Success
+             // Finished
           },
           (error) => {
              throw new Error(error);
@@ -129,73 +173,37 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const chunkText = chunk.text || '';
           assistantContent += chunkText;
 
-          const incrementalSession: ChatSession = {
-              ...updatedSession,
-              messages: updatedSession.messages.map(m => 
-                m.id === assistantMessageId ? { ...m, content: assistantContent } : m
-              ),
-              lastUpdated: new Date()
-          };
-          saveSession(incrementalSession);
-          setSessions(getSessions());
+          setSessions(prev => prev.map(s => s.id === sessionId ? {
+            ...s,
+            messages: s.messages.map(m => m.id === assistantMessageId ? { ...m, content: assistantContent } : m)
+          } : s));
         }
+        saveSession(updatedSession); // Save final locally
       }
 
-      const finalAssistantContent = assistantContent || (stopRefs.current[sessionId] ? "Generation stopped." : "I'm sorry, I couldn't process that. Let's try again! 😊");
-      
-      const finalSession: ChatSession = {
-        ...updatedSession,
-        messages: updatedSession.messages.map(m => 
-          m.id === assistantMessageId ? { ...m, content: finalAssistantContent } : m
-        ),
-        lastUpdated: new Date()
-      };
-
-      // Generate follow-up items
+      // Generate follow-ups locally for now or backend task
       if (!stopRefs.current[sessionId] && assistantContent) {
         setIsFollowUpGenerating(prev => ({ ...prev, [sessionId]: true }));
         try {
           const followUp = await generateFollowUp(assistantContent);
-
-          if (!stopRefs.current[sessionId]) {
-            const sessionWithFollowUp: ChatSession = {
-              ...finalSession,
-              messages: finalSession.messages.map(m => 
-                m.id === assistantMessageId ? { ...m, followUp: followUp || undefined } : m
-              ),
-              title: finalSession.messages.length <= 3 ? content.slice(0, 30) + '...' : finalSession.title,
-              lastUpdated: new Date()
-            };
-            updateSession(sessionWithFollowUp);
+          if (followUp) {
+              setSessions(prev => prev.map(s => s.id === sessionId ? {
+                  ...s,
+                  messages: s.messages.map(m => m.id === assistantMessageId ? { ...m, followUp: followUp } : m)
+              } : s));
           }
         } finally {
           setIsFollowUpGenerating(prev => ({ ...prev, [sessionId]: false }));
         }
-      } else {
-        updateSession(finalSession);
       }
 
     } catch (error: any) {
-      console.error('Error chatting with Gemini:', error);
-      
-      let errorMessage = "I'm sorry, I encountered an error while processing your request. Please try again later.";
-      if (error?.status === 429 || error?.message?.includes('429') || error?.message?.includes('RESOURCE_EXHAUSTED')) {
-        errorMessage = "I'm currently receiving too many requests and have reached my rate limit. Please wait a moment and try again.";
-      }
-
-      const errorSession: ChatSession = {
-        ...updatedSession,
-        messages: updatedSession.messages.map(m => 
-          m.id === assistantMessageId ? { ...m, content: errorMessage } : m
-        ),
-        lastUpdated: new Date()
-      };
-      updateSession(errorSession);
+      console.error('Error chatting:', error);
     } finally {
       setIsGenerating(prev => ({ ...prev, [sessionId]: false }));
       stopRefs.current[sessionId] = false;
     }
-  }, [isGenerating, updateSession]);
+  }, [isGenerating, sessions, isAuthenticated]);
 
   return (
     <ChatContext.Provider value={{ 

@@ -11,5 +11,21 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: edubuddy-backend
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=edubuddy;Username=admin;Password=password123
+      - JwtSettings__Key=EduBuddySecretKeyThatIsAtLeast32CharsLong!
+      - JwtSettings__Issuer=EduBuddy
+      - JwtSettings__Audience=EduBuddyUsers
+      - GeminiApiKey=your_gemini_api_key_here
+    ports:
+      - "5293:8080"
+    depends_on:
+      - db
+
 volumes:
   postgres_data:

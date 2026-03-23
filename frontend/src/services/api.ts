@@ -78,6 +78,22 @@ class ApiService {
         return res.json();
     }
 
+    async getConversations() {
+        const res = await fetch(`${API_URL}/api/conversation`, {
+            headers: { 'Authorization': `Bearer ${this.token}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch conversations");
+        return res.json();
+    }
+
+    async getThread(conversationId: string) {
+        const res = await fetch(`${API_URL}/api/conversation/${conversationId}/thread`, {
+            headers: { 'Authorization': `Bearer ${this.token}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch thread");
+        return res.json();
+    }
+
     async syncConversations(sessions: any[]) {
         const payload = sessions.map(s => ({
             id: s.id,
