@@ -33,8 +33,17 @@ export const TestPage: React.FC = () => {
         cards.push(m.followUp.flipCard);
       }
     });
-    // Shuffle cards
-    return cards.sort(() => Math.random() - 0.5);
+    // Shuffle cards and their options
+    const shuffled = cards.sort(() => Math.random() - 0.5);
+    return shuffled.map(card => {
+      const correctAnswer = card.options[card.correctAnswerIndex];
+      const shuffledOptions = [...card.options].sort(() => Math.random() - 0.5);
+      return {
+        ...card,
+        options: shuffledOptions,
+        correctAnswerIndex: shuffledOptions.indexOf(correctAnswer),
+      };
+    });
   }, [messages]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
