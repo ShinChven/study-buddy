@@ -7,9 +7,9 @@ This board tracks the granular progress of the backend implementation and fronte
 | Task | Priority | Category | Status |
 | :--- | :--- | :--- | :--- |
 | Setup PostgreSQL Docker Container & Connection | High | Database | In Progress |
-| Define EF Core Entities (User, Conversation, Message, Artifact) | High | Database | To Do |
-| Configure ASP.NET Core Identity & DB Migrations | High | Auth | To Do |
-| Implement JWT Token Generation & Validation | High | Auth | To Do |
+| Define EF Core Entities (User, Conversation, Message, Artifact) | High | Database | Completed ✅ |
+| Configure ASP.NET Core Identity & DB Migrations | High | Auth | Completed ✅ |
+| Implement JWT Token Generation & Validation | High | Auth | In Progress |
 | Setup Swagger/OpenAPI with JWT Auth Support | Low | Docs | To Do |
 
 ---
