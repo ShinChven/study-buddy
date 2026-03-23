@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ChatSession, FollowUpSettings, ThemeSettings, ACCENT_COLORS } from '../types';
 import { MessageSquare, History, Plus, GraduationCap, Moon, Sun, Palette, Settings2, Trash2, AlertCircle, X, ChevronDown, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -97,6 +97,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [isThemeExpanded, setIsThemeExpanded] = React.useState(false);
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
+  
+  const sortedSessions = useMemo(() => {
+    return [...sessions].sort((a, b) => {
+      const timeA = a.lastUpdated instanceof Date ? a.lastUpdated.getTime() : new Date(a.lastUpdated).getTime();
+      const timeB = b.lastUpdated instanceof Date ? b.lastUpdated.getTime() : new Date(b.lastUpdated).getTime();
+      return timeB - timeA;
+    });
+  }, [sessions]);
 
   const handleDeleteClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -159,7 +167,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <History size={14} />
             Recent Lessons
           </div>
-          {sessions.map((session) => (
+          {sortedSessions.map((session) => (
             <button
               key={session.id}
               onClick={() => onSelectSession(session.id)}

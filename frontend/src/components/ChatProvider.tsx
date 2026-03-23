@@ -36,12 +36,17 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (isAuthenticated) {
       try {
         const backendSessions = await apiService.getConversations();
-        setSessions(backendSessions.map((s: any) => ({
-          id: s.id,
-          title: s.title,
-          lastUpdated: new Date(s.lastUpdated),
-          messages: [] 
-        })));
+        setSessions(prev => {
+          return backendSessions.map((s: any) => {
+            const existing = prev.find(p => p.id === s.id);
+            return {
+              id: s.id,
+              title: s.title,
+              lastUpdated: new Date(s.lastUpdated),
+              messages: existing ? existing.messages : [] 
+            };
+          });
+        });
       } catch (err) {
         console.error("Failed to fetch backend sessions", err);
       }
@@ -198,11 +203,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-    } catch (error: any) {
-      console.error('Error chatting:', error);
     } finally {
       setIsGenerating(prev => ({ ...prev, [sessionId]: false }));
       stopRefs.current[sessionId] = false;
+      refreshSessions();
     }
   }, [isGenerating, sessions, isAuthenticated]);
 
