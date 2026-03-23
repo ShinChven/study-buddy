@@ -6,15 +6,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, ChatSession, FollowUp } from '../types';
-import { chatWithGeminiStream, generateFollowUp } from '../services/gemini';
 import { apiService } from '../services/api';
 import { useAuth } from './AuthProvider';
-import { getSessions, updateSession as saveSession, deleteSession as removeSession, getSessionById } from '../services/storage';
 
 interface ChatContextType {
   sessions: ChatSession[];
   isGenerating: Record<string, boolean>;
   isFollowUpGenerating: Record<string, boolean>;
+  reasoning: Record<string, string>;
   sendMessage: (sessionId: string, content: string, isAuto?: boolean) => Promise<void>;
   stopGeneration: (sessionId: string) => void;
   deleteSession: (id: string) => void;
@@ -24,30 +23,27 @@ interface ChatContextType {
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-const USE_BACKEND = import.meta.env.VITE_USE_BACKEND === 'true';
-
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [isGenerating, setIsGenerating] = useState<Record<string, boolean>>({});
   const [isFollowUpGenerating, setIsFollowUpGenerating] = useState<Record<string, boolean>>({});
+  const [reasoning, setReasoning] = useState<Record<string, string>>({});
   const stopRefs = useRef<Record<string, boolean>>({});
 
   const refreshSessions = useCallback(async () => {
-    if (USE_BACKEND && isAuthenticated) {
+    if (isAuthenticated) {
       try {
         const backendSessions = await apiService.getConversations();
         setSessions(backendSessions.map((s: any) => ({
           id: s.id,
           title: s.title,
           lastUpdated: new Date(s.lastUpdated),
-          messages: [] // Minimal info for sidebar
+          messages: [] 
         })));
       } catch (err) {
         console.error("Failed to fetch backend sessions", err);
       }
-    } else {
-      setSessions(getSessions());
     }
   }, [isAuthenticated]);
 
@@ -60,43 +56,36 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const updateSession = useCallback((session: ChatSession) => {
-    if (!USE_BACKEND) {
-        saveSession(session);
-    }
+    // Rely on backend persistence via hub/api
     refreshSessions();
   }, [refreshSessions]);
 
   const deleteSession = useCallback((id: string) => {
-    if (!USE_BACKEND) {
-        removeSession(id);
-    }
+    // TODO: Implement backend delete endpoint call
     refreshSessions();
   }, [refreshSessions]);
 
   const sendMessage = useCallback(async (sessionId: string, content: string, isAuto = false) => {
     let session = sessions.find(s => s.id === sessionId);
-    if (!session) {
-        if (USE_BACKEND) {
-            // Need to fetch full thread for backend session if not loaded
-            try {
-                const thread = await apiService.getThread(sessionId);
-                session = {
-                    id: sessionId,
-                    title: sessions.find(s => s.id === sessionId)?.title || "Chat",
-                    messages: thread.map((m: any) => ({
-                        id: m.id,
-                        role: m.role === 0 ? 'user' : 'assistant',
-                        content: m.content,
-                        timestamp: new Date(m.createdAt)
-                    })),
-                    lastUpdated: new Date()
-                };
-            } catch (err) {
-                console.error("Failed to load thread", err);
-                return;
-            }
-        } else {
-            session = getSessionById(sessionId);
+    
+    // Load full thread if messages are missing (e.g. initial sidebar load)
+    if (!session || (session.messages.length === 0 && isAuthenticated)) {
+        try {
+            const thread = await apiService.getThread(sessionId);
+            session = {
+                id: sessionId,
+                title: sessions.find(s => s.id === sessionId)?.title || "Chat",
+                messages: thread.map((m: any) => ({
+                    id: m.id,
+                    role: m.role === 0 ? 'user' : 'assistant',
+                    content: m.content,
+                    timestamp: new Date(m.createdAt)
+                })),
+                lastUpdated: new Date()
+            };
+        } catch (err) {
+            console.error("Failed to load thread", err);
+            return;
         }
     }
     
@@ -104,6 +93,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     stopRefs.current[sessionId] = false;
     setIsGenerating(prev => ({ ...prev, [sessionId]: true }));
+    setReasoning(prev => ({ ...prev, [sessionId]: '' }));
 
     let currentMessages = [...session.messages];
     
@@ -131,67 +121,48 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       lastUpdated: new Date()
     };
     
-    // Optimistic update
     setSessions(prev => prev.map(s => s.id === sessionId ? updatedSession : s));
 
     try {
       let assistantContent = '';
+      let assistantReasoning = '';
 
-      if (USE_BACKEND) {
-        await apiService.sendMessage(
-          sessionId,
-          content,
-          (chunk) => {
-            if (stopRefs.current[sessionId]) return;
-            assistantContent += chunk;
-            setSessions(prev => prev.map(s => s.id === sessionId ? {
-                ...s,
-                messages: s.messages.map(m => m.id === assistantMessageId ? { ...m, content: assistantContent } : m)
-            } : s));
-          },
-          (thinking) => {
-             // Handle thinking UI if needed
-          },
-          (messageId) => {
-             // Finished
-          },
-          (error) => {
-             throw new Error(error);
-          }
-        );
-      } else {
-        const responseStream = await chatWithGeminiStream(currentMessages.map(m => ({
-          role: m.role,
-          content: m.content
-        })));
-
-        for await (const chunk of responseStream) {
-          if (stopRefs.current[sessionId]) {
-            break;
-          }
-          
-          const chunkText = chunk.text || '';
-          assistantContent += chunkText;
-
+      await apiService.sendMessage(
+        sessionId,
+        content,
+        (chunk) => {
+          if (stopRefs.current[sessionId]) return;
+          assistantContent += chunk;
           setSessions(prev => prev.map(s => s.id === sessionId ? {
-            ...s,
-            messages: s.messages.map(m => m.id === assistantMessageId ? { ...m, content: assistantContent } : m)
+              ...s,
+              messages: s.messages.map(m => m.id === assistantMessageId ? { ...m, content: assistantContent } : m)
           } : s));
+        },
+        (thinkingChunk) => {
+           if (stopRefs.current[sessionId]) return;
+           assistantReasoning += thinkingChunk;
+           setReasoning(prev => ({ ...prev, [sessionId]: assistantReasoning }));
+        },
+        (messageId) => {
+           // Finished streaming
+        },
+        (error) => {
+           throw new Error(error);
         }
-        saveSession(updatedSession); // Save final locally
-      }
+      );
 
-      // Generate follow-ups locally for now or backend task
+      // Generate follow-ups exclusively via Backend Proxy
       if (!stopRefs.current[sessionId] && assistantContent) {
         setIsFollowUpGenerating(prev => ({ ...prev, [sessionId]: true }));
         try {
-          const followUp = await generateFollowUp(assistantContent);
-          if (followUp) {
-              setSessions(prev => prev.map(s => s.id === sessionId ? {
-                  ...s,
-                  messages: s.messages.map(m => m.id === assistantMessageId ? { ...m, followUp: followUp } : m)
-              } : s));
-          }
+          await apiService.getFollowUp(assistantContent, (followUp) => {
+            if (followUp) {
+                setSessions(prev => prev.map(s => s.id === sessionId ? {
+                    ...s,
+                    messages: s.messages.map(m => m.id === assistantMessageId ? { ...m, followUp: followUp } : m)
+                } : s));
+            }
+          });
         } finally {
           setIsFollowUpGenerating(prev => ({ ...prev, [sessionId]: false }));
         }
@@ -210,6 +181,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sessions, 
         isGenerating, 
         isFollowUpGenerating, 
+        reasoning,
         sendMessage, 
         stopGeneration, 
         deleteSession, 

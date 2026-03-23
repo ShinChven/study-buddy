@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using EduBuddy.Application.Interfaces;
 using EduBuddy.Domain.Entities;
 using EduBuddy.Infrastructure.Persistence;
 using EduBuddy.Infrastructure.Services;
@@ -15,11 +16,22 @@ public class ChatHub : Hub
 {
     private readonly IChatClient _chatClient;
     private readonly EduBuddyDbContext _context;
+    private readonly IFollowUpService _followUpService;
 
-    public ChatHub(IChatClient chatClient, EduBuddyDbContext context)
+    public ChatHub(IChatClient chatClient, EduBuddyDbContext context, IFollowUpService followUpService)
     {
         _chatClient = chatClient;
         _context = context;
+        _followUpService = followUpService;
+    }
+
+    public async Task GetFollowUp(string assistantContent)
+    {
+        var result = await _followUpService.GenerateFollowUpAsync(assistantContent);
+        if (result != null)
+        {
+            await Clients.Caller.SendAsync("ReceiveFollowUp", result);
+        }
     }
 
     public async Task SendMessage(Guid conversationId, string userContent)
@@ -58,22 +70,9 @@ public class ChatHub : Hub
             .Select(m => new Microsoft.Extensions.AI.ChatMessage(m.Role == EduBuddy.Domain.Entities.MessageRole.User ? Microsoft.Extensions.AI.ChatRole.User : Microsoft.Extensions.AI.ChatRole.Assistant, m.Content))
             .ToList();
 
-        // Setup Tool Calling
-        var tools = new AITools();
-        var options = new ChatOptions
-        {
-            Tools = new List<AITool>
-            {
-                AIFunctionFactory.Create(tools.ShowChart),
-                AIFunctionFactory.Create(tools.ShowDiagram),
-                AIFunctionFactory.Create(tools.ShowKeynote),
-                AIFunctionFactory.Create(tools.CreateFlipCard)
-            }
-        };
-
         // Stream AI Response
         var fullContent = "";
-        await foreach (var chunk in _chatClient.GetStreamingResponseAsync(history, options))
+        await foreach (var chunk in _chatClient.GetStreamingResponseAsync(history))
         {
             // Handle Thinking/Reasoning
             var thinking = chunk.Contents.OfType<TextReasoningContent>().FirstOrDefault();
@@ -98,14 +97,6 @@ public class ChatHub : Hub
             CreatedAt = DateTime.UtcNow,
             ParentMessageId = userMessage.Id
         };
-
-        // Add Extracted Artifacts
-        foreach (var artifact in tools.ExtractedArtifacts)
-        {
-            artifact.MessageId = assistantMessage.Id;
-            assistantMessage.Artifacts.Add(artifact);
-            await Clients.Caller.SendAsync("ReceiveArtifact", JsonSerializer.Serialize(artifact));
-        }
 
         _context.Messages.Add(assistantMessage);
         conversation.LastUpdated = DateTime.UtcNow;

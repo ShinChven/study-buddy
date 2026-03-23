@@ -6,18 +6,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
-import { Send, Sparkles, Menu } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
-import { ChatSession, FollowUpSettings } from '../types';
+import { Send, Sparkles, Menu, Loader2 } from 'lucide-react';
 import { useTheme } from '../components/ThemeProvider';
 import { useChat } from '../components/ChatProvider';
+import { apiService } from '../services/api';
 
 export const NewChatPage: React.FC = () => {
   const { theme, updateTheme } = useTheme();
   const navigate = useNavigate();
-  const { sessions, deleteSession, updateSession } = useChat();
+  const { sessions, deleteSession, refreshSessions } = useChat();
   const [input, setInput] = useState('');
-  const [followUpSettings, setFollowUpSettings] = useState<FollowUpSettings>({
+  const [loading, setLoading] = useState(false);
+  const [followUpSettings, setFollowUpSettings] = useState({
     debugMode: false,
     showSkipped: true,
     threshold: 7,
@@ -41,27 +41,25 @@ export const NewChatPage: React.FC = () => {
     deleteSession(id);
   };
 
-  const handleStartChat = (e: React.FormEvent) => {
+  const handleStartChat = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || loading) return;
 
-    const sessionId = uuidv4();
-    const newSession: ChatSession = {
-      id: sessionId,
-      title: input.slice(0, 30) + '...',
-      messages: [
-        {
-          id: uuidv4(),
-          role: 'user',
-          content: input,
-          timestamp: new Date(),
-        }
-      ],
-      lastUpdated: new Date(),
-    };
-
-    updateSession(newSession);
-    navigate(`/study/${sessionId}`);
+    setLoading(true);
+    try {
+        const title = input.slice(0, 30) + '...';
+        const conversation = await apiService.createConversation(title);
+        
+        // Initial message will be sent in ChatPage's useEffect when it detects a new user message or via ChatProvider
+        // We'll pass the initial message content via state or just navigate and let ChatPage handle the first message
+        // Better: update the session list and navigate
+        await refreshSessions();
+        navigate(`/study/${conversation.id}`, { state: { initialMessage: input } });
+    } catch (err) {
+        console.error("Failed to start chat", err);
+    } finally {
+        setLoading(false);
+    }
   };
 
   const handleNewChat = () => {
@@ -83,7 +81,7 @@ export const NewChatPage: React.FC = () => {
           if (window.innerWidth < 768) setIsSidebarOpen(false);
         }}
         followUpSettings={followUpSettings}
-        onUpdateSettings={setFollowUpSettings}
+        onUpdateSettings={() => {}}
         themeSettings={theme}
         onUpdateTheme={updateTheme}
         isOpen={isSidebarOpen}
@@ -123,13 +121,14 @@ export const NewChatPage: React.FC = () => {
               placeholder="Ask anything... (e.g., Explain Quantum Entanglement)"
               className="w-full px-6 md:px-8 py-4 md:py-6 pr-16 md:pr-20 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-[1.5rem] md:rounded-[2rem] shadow-xl md:shadow-2xl shadow-slate-100 dark:shadow-none text-base md:text-lg focus:outline-none focus:border-accent-500 transition-all group-hover:border-slate-200 dark:group-hover:border-slate-600"
               autoFocus
+              disabled={loading}
             />
             <button 
               type="submit"
-              disabled={!input.trim()}
+              disabled={!input.trim() || loading}
               className="absolute right-4 md:right-4 top-1/2 -translate-y-1/2 p-3 md:p-4 bg-accent-600 text-white rounded-xl md:rounded-[1.5rem] hover:bg-accent-700 transition-all shadow-lg shadow-accent-200 disabled:opacity-50 disabled:shadow-none"
             >
-              <Send size={20} className="md:w-6 md:h-6" />
+              {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} className="md:w-6 md:h-6" />}
             </button>
           </form>
 
@@ -139,6 +138,7 @@ export const NewChatPage: React.FC = () => {
                 key={topic}
                 onClick={() => setInput(topic)}
                 className="px-4 md:px-6 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-full text-xs md:text-sm font-bold hover:bg-accent-50 dark:hover:bg-accent-900/30 hover:border-accent-100 dark:hover:border-accent-800 hover:text-accent-600 dark:hover:text-accent-400 transition-all flex items-center gap-2"
+                disabled={loading}
               >
                 <Sparkles size={14} />
                 {topic}

@@ -78,6 +78,29 @@ class ApiService {
         return res.json();
     }
 
+    async register(email: string, password: string, displayName: string) {
+        const res = await fetch(`${API_URL}/api/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, displayName })
+        });
+        if (!res.ok) throw new Error("Registration failed");
+        return res.json();
+    }
+
+    async createConversation(title: string) {
+        const res = await fetch(`${API_URL}/api/conversation`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.token}`
+            },
+            body: JSON.stringify({ title })
+        });
+        if (!res.ok) throw new Error("Failed to create conversation");
+        return res.json();
+    }
+
     async getConversations() {
         const res = await fetch(`${API_URL}/api/conversation`, {
             headers: { 'Authorization': `Bearer ${this.token}` }
@@ -94,30 +117,17 @@ class ApiService {
         return res.json();
     }
 
-    async syncConversations(sessions: any[]) {
-        const payload = sessions.map(s => ({
-            id: s.id,
-            title: s.title,
-            createdAt: s.lastUpdated, // Map roughly
-            lastUpdated: s.lastUpdated,
-            messages: s.messages.map((m: any) => ({
-                id: m.id,
-                role: m.role === 'user' ? 0 : 1, // MessageRole enum index
-                content: m.content,
-                createdAt: m.timestamp,
-                parentMessageId: null // Local storage doesn't track this strictly
-            }))
-        }));
-
-        const res = await fetch(`${API_URL}/api/conversation/sync`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.token}`
-            },
-            body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error("Sync failed");
+    async getFollowUp(assistantContent: string, onResult: (followUp: any) => void) {
+        try {
+            await this.startConnection();
+            this.connection?.on("ReceiveFollowUp", (json) => {
+                this.connection?.off("ReceiveFollowUp");
+                onResult(JSON.parse(json));
+            });
+            await this.connection?.invoke("GetFollowUp", assistantContent);
+        } catch (err) {
+            console.error("Failed to get follow up", err);
+        }
     }
 }
 

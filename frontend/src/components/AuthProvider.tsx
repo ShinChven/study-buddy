@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiService } from '../services/api';
-import { getSessions } from '../services/storage';
 
 interface UserProfile {
     email: string;
@@ -34,18 +33,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, []);
 
-    const syncLocalHistory = async () => {
-        const localSessions = getSessions();
-        if (localSessions.length > 0) {
-            try {
-                await apiService.syncConversations(localSessions);
-                console.log('Local history synced successfully');
-            } catch (err) {
-                console.error('Failed to sync local history', err);
-            }
-        }
-    };
-
     const login = async (email: string, password: string) => {
         const response = await apiService.login(email, password);
         const { token, ...profile } = response;
@@ -54,7 +41,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         apiService.setToken(token);
         localStorage.setItem('auth_token', token);
         localStorage.setItem('auth_user', JSON.stringify(profile));
-        await syncLocalHistory();
     };
 
     const register = async (email: string, password: string, displayName: string) => {
@@ -65,7 +51,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         apiService.setToken(token);
         localStorage.setItem('auth_token', token);
         localStorage.setItem('auth_user', JSON.stringify(profile));
-        await syncLocalHistory();
     };
 
     const logout = () => {

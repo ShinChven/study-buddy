@@ -11,6 +11,7 @@ import 'katex/dist/katex.min.css';
 
 interface ChatWindowProps {
   messages: Message[];
+  thinking?: string; // Real-time reasoning chunk
   onSendMessage: (content: string) => void;
   onEditMessage: (messageId: string, newContent: string) => void;
   isLoading: boolean;
@@ -53,7 +54,6 @@ const ChatInput = memo(({
     setInput(e.target.value);
   };
 
-  // Sync height after input changes to avoid layout thrashing in onChange
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -102,7 +102,7 @@ const ChatInput = memo(({
 
 ChatInput.displayName = 'ChatInput';
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage, onEditMessage, isLoading, isGeneratingFollowUp, followUpSettings, onStopGeneration }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, thinking, onSendMessage, onEditMessage, isLoading, isGeneratingFollowUp, followUpSettings, onStopGeneration }) => {
   const [thinkingStep, setThinkingStep] = React.useState(0);
   const [editingMessageId, setEditingMessageId] = React.useState<string | null>(null);
   const [editContent, setEditContent] = React.useState('');
@@ -133,14 +133,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
   React.useEffect(() => {
     if (messages.length === 0) return;
     
-    // Find the most recent user message
     const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
     
-    // Only trigger scroll for new user messages
     if (lastUserMessage && lastScrolledMessageIdRef.current !== lastUserMessage.id) {
       lastScrolledMessageIdRef.current = lastUserMessage.id;
       
-      // Use a small timeout to ensure the DOM has updated with the new message
       setTimeout(() => {
         const targetElement = document.getElementById(`message-${lastUserMessage.id}`);
         const container = scrollRef.current;
@@ -148,11 +145,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
         if (targetElement && container) {
           const rect = targetElement.getBoundingClientRect();
           const containerRect = container.getBoundingClientRect();
-          // Calculate the position relative to the container's current scroll
           const relativeTop = rect.top - containerRect.top + container.scrollTop;
           
           container.scrollTo({
-            top: relativeTop - 20, // 20px padding from the top
+            top: relativeTop - 20,
             behavior: 'smooth'
           });
         }
@@ -219,6 +215,23 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
                   />
                 </div>
                 <div className="flex flex-col gap-2 flex-1 min-w-0 w-full">
+                  {/* Reasoning/Thinking Panel */}
+                  {idx === messages.length - 1 && msg.role === 'assistant' && thinking && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="mb-2 p-3 bg-slate-50 dark:bg-slate-800/50 border-l-2 border-accent-400 rounded-r-xl text-xs text-slate-500 dark:text-slate-400 italic overflow-hidden"
+                    >
+                      <div className="flex items-center gap-2 mb-1 font-bold text-accent-600 dark:text-accent-400 not-italic">
+                        <Sparkles size={12} />
+                        Reasoning Process
+                      </div>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {thinking}
+                      </ReactMarkdown>
+                    </motion.div>
+                  )}
+
                   <div className={`p-3 md:p-4 rounded-2xl shadow-sm group relative w-full overflow-hidden ${
                     msg.role === 'user' 
                       ? 'bg-accent-600 text-white rounded-tr-none ml-auto' 

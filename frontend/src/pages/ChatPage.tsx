@@ -4,7 +4,7 @@
  */
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { ChatWindow } from '../components/ChatWindow';
 import { ArtifactPanel } from '../components/ArtifactPanel';
@@ -17,11 +17,13 @@ import { Menu, PanelRight } from 'lucide-react';
 export const ChatPage: React.FC = () => {
   const { theme, updateTheme } = useTheme();
   const { conversation_id } = useParams<{ conversation_id: string }>();
+  const location = useLocation();
   const navigate = useNavigate();
   const { 
     sessions, 
     isGenerating, 
     isFollowUpGenerating, 
+    reasoning,
     sendMessage, 
     stopGeneration, 
     deleteSession, 
@@ -44,8 +46,6 @@ export const ChatPage: React.FC = () => {
       if (window.innerWidth < 768) {
         setIsSidebarOpen(false);
       } else if (window.innerWidth >= 768 && !isSidebarOpen) {
-        // Only auto-open if it wasn't manually closed (optional, but let's follow user's request for "automatically")
-        // To be safe and simple, let's just sync with breakpoints
         setIsSidebarOpen(true);
       }
       
@@ -66,13 +66,21 @@ export const ChatPage: React.FC = () => {
       const session = sessions.find(s => s.id === conversation_id);
       if (session) {
         setActiveSession(session);
-        // Start generation if the last message is from user
-        const lastMessage = session.messages[session.messages.length - 1];
-        if (lastMessage && lastMessage.role === 'user' && !isGenerating[conversation_id]) {
-          sendMessage(conversation_id, lastMessage.content, true);
+        
+        // Handle initial message from NewChatPage
+        const initialMessage = (location.state as any)?.initialMessage;
+        if (initialMessage && session.messages.length === 0 && !isGenerating[conversation_id]) {
+            // Clear state to avoid re-triggering on refreshes
+            navigate(location.pathname, { replace: true, state: {} });
+            sendMessage(conversation_id, initialMessage);
+        } else {
+            // Start generation if the last message is from user (and it's the only one, meaning it's a new or fresh user input)
+            const lastMessage = session.messages[session.messages.length - 1];
+            if (lastMessage && lastMessage.role === 'user' && session.messages.length === 1 && !isGenerating[conversation_id]) {
+              sendMessage(conversation_id, lastMessage.content, true);
+            }
         }
       } else {
-        // If sessions are loaded but this one isn't found, it might be an invalid ID
         if (sessions.length > 0) {
             navigate('/study/new');
         }
@@ -80,7 +88,7 @@ export const ChatPage: React.FC = () => {
     } else {
       navigate('/study/new');
     }
-  }, [conversation_id, sessions, navigate, isGenerating, sendMessage]);
+  }, [conversation_id, sessions, navigate, isGenerating, sendMessage, location]);
 
   const handleDeleteSession = (id: string) => {
     deleteSession(id);
@@ -90,32 +98,7 @@ export const ChatPage: React.FC = () => {
   };
 
   const handleEditMessage = async (messageId: string, newContent: string) => {
-    if (!activeSession) return;
-
-    const messageIndex = activeSession.messages.findIndex(m => m.id === messageId);
-    if (messageIndex === -1) return;
-
-    // Branch: take messages up to the edited one
-    const slicedMessages = activeSession.messages.slice(0, messageIndex + 1);
-    
-    // Update the edited message content and clear follow-ups
-    const editedMessage = { 
-      ...slicedMessages[slicedMessages.length - 1], 
-      content: newContent,
-      followUp: undefined 
-    };
-    slicedMessages[slicedMessages.length - 1] = editedMessage;
-
-    const newSessionId = uuidv4();
-    const newSession: ChatSession = {
-      id: newSessionId,
-      title: messageIndex === 0 ? newContent.slice(0, 30) + '...' : activeSession.title,
-      messages: slicedMessages,
-      lastUpdated: new Date()
-    };
-
-    updateSession(newSession);
-    navigate(`/study/${newSessionId}`);
+    // TODO: Implement backend branch logic if needed
   };
 
   const handleSendMessage = async (content: string) => {
@@ -177,6 +160,7 @@ export const ChatPage: React.FC = () => {
         <div className="flex-1 overflow-hidden relative">
           <ChatWindow 
             messages={activeSession?.messages || []} 
+            reasoning={conversation_id ? reasoning[conversation_id] : undefined}
             onSendMessage={handleSendMessage}
             onEditMessage={handleEditMessage}
             isLoading={conversation_id ? isGenerating[conversation_id] : false}
