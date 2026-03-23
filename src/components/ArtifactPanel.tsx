@@ -27,22 +27,23 @@ export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({ messages, settings
     .map(m => m.followUp!.flipCard!);
 
   return (
-    <div className="w-80 h-full bg-white dark:bg-slate-900 border-l border-slate-100 dark:border-slate-800 p-6 flex flex-col gap-8 overflow-y-auto relative">
-      <section>
-        <div className="flex items-center gap-2 text-accent-600 dark:text-accent-400 font-bold mb-4">
+    <div className="w-80 h-full bg-white dark:bg-slate-900 border-l border-slate-100 dark:border-slate-800 p-6 flex flex-col gap-8 overflow-hidden relative">
+      <section className="flex flex-col min-h-0 flex-1">
+        <div className="flex items-center gap-2 text-accent-600 dark:text-accent-400 font-bold mb-4 flex-shrink-0">
           <Presentation size={20} />
           <h2>Study Keynotes</h2>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto flex-1 px-1 -mx-1 custom-scrollbar">
           {keynotes.length > 0 ? (
             keynotes.map((item, i) => (
               <motion.div
                 key={item.messageId}
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                whileHover={{ scale: 1.02 }}
+                whileHover={{ scale: 1.02, zIndex: 10 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                 onClick={() => navigate(`/study/${conversation_id}/keynotes/${item.messageId}`)}
-                className="p-4 rounded-2xl border bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800 cursor-pointer hover:border-accent-300 dark:hover:border-accent-700 transition-all group"
+                className="p-4 rounded-2xl border bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800 cursor-pointer hover:border-accent-300 dark:hover:border-accent-700 transition-all group relative"
               >
                 <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200 mb-1 group-hover:text-accent-600 transition-colors">
                   <Layout size={16} />
@@ -64,7 +65,7 @@ export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({ messages, settings
         </div>
       </section>
 
-      <section className="mt-auto">
+      <section className="flex-shrink-0 mt-auto pt-4 border-t border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-2 text-accent-600 dark:text-accent-400 font-bold mb-4">
           <BookOpen size={20} />
           <h2>Flip Cards</h2>
