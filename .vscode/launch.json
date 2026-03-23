@@ -5,14 +5,15 @@
       "command": "npm run dev",
       "name": "npm run dev",
       "request": "launch",
-      "type": "node-terminal"
+      "type": "node-terminal",
+      "cwd": "${workspaceFolder}/web"
     },
     {
       "name": "Launch Chrome against localhost",
       "type": "chrome",
       "request": "launch",
       "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}"
+      "webRoot": "${workspaceFolder}/web"
     }
   ]
 }
