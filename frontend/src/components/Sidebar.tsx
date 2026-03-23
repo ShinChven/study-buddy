@@ -1,7 +1,9 @@
 import React from 'react';
-import { ChatSession, FollowUpSettings, ThemeSettings, AccentColor, ACCENT_COLORS } from '../types';
-import { MessageSquare, History, Plus, GraduationCap, Moon, Sun, Palette, Settings2, Trash2, AlertCircle, X, ChevronDown } from 'lucide-react';
+import { ChatSession, FollowUpSettings, ThemeSettings, ACCENT_COLORS } from '../types';
+import { MessageSquare, History, Plus, GraduationCap, Moon, Sun, Palette, Settings2, Trash2, AlertCircle, X, ChevronDown, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAuth } from './AuthProvider';
+import { useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
   sessions: ChatSession[];
@@ -93,6 +95,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
   const [isThemeExpanded, setIsThemeExpanded] = React.useState(false);
+  const { isAdmin } = useAuth();
+  const navigate = useNavigate();
 
   const handleDeleteClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -188,6 +192,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
 
         <div className="p-4 md:p-6 border-t border-slate-100 dark:border-slate-800 space-y-4">
+          {isAdmin && (
+            <button
+              onClick={() => navigate('/admin')}
+              className="w-full flex items-center gap-3 p-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors font-semibold text-sm shadow-sm"
+            >
+              <ShieldCheck size={18} className="text-accent-600" />
+              Admin Console
+            </button>
+          )}
+
           <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400">

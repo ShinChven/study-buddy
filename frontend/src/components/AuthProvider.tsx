@@ -22,17 +22,21 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<UserProfile | null>(null);
-    const [token, setToken] = useState<string | null>(null);
-
-    useEffect(() => {
-        const savedToken = localStorage.getItem('auth_token');
+    const [user, setUser] = useState<UserProfile | null>(() => {
         const savedUser = localStorage.getItem('auth_user');
-        if (savedToken && savedUser) {
-            setToken(savedToken);
-            setUser(JSON.parse(savedUser));
+        return savedUser ? JSON.parse(savedUser) : null;
+    });
+    const [token, setToken] = useState<string | null>(() => {
+        const savedToken = localStorage.getItem('auth_token');
+        if (savedToken) {
             apiService.setToken(savedToken);
         }
+        return savedToken;
+    });
+
+    // No longer need useEffect for initial state as it is handled in useState initializer
+    useEffect(() => {
+        // This is still useful if we want to add cross-tab sync or token validation logic later
     }, []);
 
     const login = async (email: string, password: string) => {

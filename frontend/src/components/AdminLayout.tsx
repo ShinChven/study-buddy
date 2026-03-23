@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Users, Key, LogOut, LayoutDashboard, ArrowLeft } from 'lucide-react';
+import { Users, Key, LogOut, LayoutDashboard, GraduationCap } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 
 export const AdminLayout: React.FC = () => {
@@ -49,11 +49,11 @@ export const AdminLayout: React.FC = () => {
 
                 <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-2">
                     <button
-                        onClick={() => navigate('/select-app')}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors"
+                        onClick={() => navigate('/study/new')}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-900/20 rounded-xl transition-colors font-medium"
                     >
-                        <ArrowLeft size={18} />
-                        Back to Selection
+                        <GraduationCap size={18} />
+                        Study Mode
                     </button>
                     <button
                         onClick={() => { logout(); navigate('/login'); }}

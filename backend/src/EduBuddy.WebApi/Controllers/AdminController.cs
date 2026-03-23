@@ -27,6 +27,17 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetSetting(string key)
     {
         var value = await _settingsService.GetSettingAsync(key);
+        
+        // Never return sensitive keys to the browser
+        if (key.Contains("ApiKey", StringComparison.OrdinalIgnoreCase))
+        {
+            return Ok(new { 
+                key, 
+                value = string.IsNullOrEmpty(value) ? null : "[SET]",
+                isSet = !string.IsNullOrEmpty(value) 
+            });
+        }
+        
         return Ok(new { key, value });
     }
 
