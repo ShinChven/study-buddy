@@ -12,6 +12,7 @@ import { Message, ChatSession, FollowUpSettings } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { useTheme } from '../components/ThemeProvider';
 import { useChat } from '../components/ChatProvider';
+import { Menu, PanelRight } from 'lucide-react';
 
 export const ChatPage: React.FC = () => {
   const { theme, updateTheme } = useTheme();
@@ -33,6 +34,9 @@ export const ChatPage: React.FC = () => {
     showSkipped: true,
     threshold: 7,
   });
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
+  const [isArtifactOpen, setIsArtifactOpen] = useState(window.innerWidth >= 1024);
 
   // Sync active session with URL parameter and sessions from provider
   useEffect(() => {
@@ -103,28 +107,52 @@ export const ChatPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full w-full bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 overflow-hidden">
+    <div className="flex h-full w-full bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 overflow-hidden relative">
       <Sidebar 
         sessions={sessions} 
         activeSessionId={conversation_id || ''} 
-        onSelectSession={(id) => navigate(`/study/${id}`)}
+        onSelectSession={(id) => {
+          navigate(`/study/${id}`);
+          setIsSidebarOpen(false);
+        }}
         onDeleteSession={handleDeleteSession}
-        onNewChat={handleNewChat}
+        onNewChat={() => {
+          handleNewChat();
+          setIsSidebarOpen(false);
+        }}
         followUpSettings={followUpSettings}
         onUpdateSettings={setFollowUpSettings}
         themeSettings={theme}
         onUpdateTheme={updateTheme}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
       
-      <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-8 shrink-0">
-          <div className="flex flex-col">
-            <h2 className="font-bold text-slate-800 dark:text-slate-100 truncate max-w-[40vw]">{activeSession?.title}</h2>
-            <p className="text-xs text-slate-400 dark:text-slate-500">Personalized Learning Agent</p>
+      <main className="flex-1 flex flex-col min-w-0 w-full relative">
+        <header className="h-14 md:h-16 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-4 md:px-8 shrink-0">
+          <div className="flex items-center gap-3">
+            <button 
+              className="p-2 -ml-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              title={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
+            >
+              <Menu size={24} />
+            </button>
+            <div className="flex flex-col">
+              <h2 className="font-bold text-slate-800 dark:text-slate-100 truncate max-w-[50vw] md:max-w-[40vw] text-sm md:text-base">{activeSession?.title}</h2>
+              <p className="text-[10px] md:text-xs text-slate-400 dark:text-slate-500">Personalized Learning Agent</p>
+            </div>
           </div>
+          <button 
+            className="p-2 -mr-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+            onClick={() => setIsArtifactOpen(!isArtifactOpen)}
+            title={isArtifactOpen ? "Close artifacts" : "Open artifacts"}
+          >
+            <PanelRight size={24} />
+          </button>
         </header>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden relative">
           <ChatWindow 
             messages={activeSession?.messages || []} 
             onSendMessage={handleSendMessage}
@@ -140,7 +168,12 @@ export const ChatPage: React.FC = () => {
       <ArtifactPanel 
         messages={activeSession?.messages || []} 
         settings={followUpSettings}
-        onTakeTest={() => navigate(`/study/${conversation_id}/test`)}
+        onTakeTest={() => {
+          navigate(`/study/${conversation_id}/test`);
+          setIsArtifactOpen(false);
+        }}
+        isOpen={isArtifactOpen}
+        onClose={() => setIsArtifactOpen(false)}
       />
     </div>
   );
