@@ -7,9 +7,9 @@ services:
       POSTGRES_PASSWORD: password123
       POSTGRES_DB: edubuddy
     ports:
-      - "5432:5432"
+      - "5433:5432" # Host port 5433 to avoid conflicts
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - edu_postgres_data:/var/lib/postgresql/data
 
   backend:
     build:
@@ -28,4 +28,4 @@ services:
       - db
 
 volumes:
-  postgres_data:
+  edu_postgres_data:
