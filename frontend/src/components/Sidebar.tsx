@@ -228,10 +228,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             Recent Lessons
           </div>
           {sortedSessions.map((session) => (
-            <button
+            <div
               key={session.id}
               onClick={() => onSelectSession(session.id)}
-              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left group relative ${
+              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left group relative cursor-pointer ${
                 activeSessionId === session.id
                   ? 'bg-accent-600 text-white shadow-md'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -248,7 +248,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <Trash2 size={14} />
               </button>
-            </button>
+            </div>
           ))}
         </div>
 
