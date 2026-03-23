@@ -50,7 +50,13 @@ public class ConversationController : ControllerBase
             Role = (int)m.Role,
             m.Content,
             m.CreatedAt,
-            m.ParentMessageId
+            m.ParentMessageId,
+            Artifacts = m.Artifacts.Select(a => new
+            {
+                a.Type,
+                a.ConfidenceScore,
+                a.Data
+            })
         });
         return Ok(result);
     }

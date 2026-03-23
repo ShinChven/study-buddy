@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using EduBuddy.Application.Interfaces;
 using EduBuddy.Domain.Entities;
 using EduBuddy.Infrastructure.Persistence;
@@ -25,12 +26,76 @@ public class ChatHub : Hub
         _followUpService = followUpService;
     }
 
-    public async Task GetFollowUp(string assistantContent)
+    public async Task GetFollowUp(string assistantContent, Guid messageId)
     {
         var result = await _followUpService.GenerateFollowUpAsync(assistantContent);
         if (result != null)
         {
+            // Persist each follow-up component as an Artifact row
+            await SaveFollowUpArtifactsAsync(messageId, result);
             await Clients.Caller.SendAsync("ReceiveFollowUp", result);
+        }
+    }
+
+    private async Task SaveFollowUpArtifactsAsync(Guid messageId, string followUpJson)
+    {
+        try
+        {
+            var doc = JsonNode.Parse(followUpJson);
+            if (doc == null) return;
+
+            var typeMap = new Dictionary<string, ArtifactType>
+            {
+                ["chart"]    = ArtifactType.Chart,
+                ["mermaid"]  = ArtifactType.Mermaid,
+                ["flipCard"] = ArtifactType.FlipCard,
+                ["keynotes"] = ArtifactType.Keynote
+            };
+
+            // Remove any stale artifacts for this message first
+            var existing = _context.Artifacts.Where(a => a.MessageId == messageId);
+            _context.Artifacts.RemoveRange(existing);
+
+            foreach (var (key, artifactType) in typeMap)
+            {
+                var node = doc[key];
+                if (node == null) continue;
+
+                double confidence = 0;
+                var confidenceNode = node["confidence"];
+                if (confidenceNode != null)
+                    confidence = confidenceNode.GetValue<double>();
+
+                _context.Artifacts.Add(new Artifact
+                {
+                    MessageId = messageId,
+                    Type = artifactType,
+                    ConfidenceScore = confidence,
+                    Data = node.ToJsonString(),
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            // Persist suggestedQuestion as a special artifact with type Chart (reuse a sentinel)
+            // We store it separately so it's not lost on reload
+            var sqNode = doc["suggestedQuestion"];
+            if (sqNode != null)
+            {
+                _context.Artifacts.Add(new Artifact
+                {
+                    MessageId = messageId,
+                    Type = ArtifactType.Chart, // stored with a marker in Data
+                    ConfidenceScore = -1,       // sentinel: -1 means suggestedQuestion
+                    Data = JsonSerializer.Serialize(new { suggestedQuestion = sqNode.ToString() }),
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to save follow-up artifacts: {ex.Message}");
         }
     }
 

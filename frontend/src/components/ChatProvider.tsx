@@ -9,6 +9,35 @@ import { Message, ChatSession, FollowUp } from '../types';
 import { apiService } from '../services/api';
 import { useAuth } from './AuthProvider';
 
+// Reconstruct a FollowUp object from the artifact rows returned by the thread endpoint
+function artifactsToFollowUp(artifacts: any[]): FollowUp | undefined {
+  if (!artifacts || artifacts.length === 0) return undefined;
+  const followUp: FollowUp = {};
+  for (const a of artifacts) {
+    try {
+      const data = typeof a.data === 'string' ? JSON.parse(a.data) : a.data;
+      const type: string = typeof a.type === 'number'
+        ? ['Chart', 'Mermaid', 'Keynote', 'FlipCard'][a.type] ?? String(a.type)
+        : String(a.type);
+      // sentinel: confidenceScore === -1 means suggestedQuestion stored as Chart
+      if (a.confidenceScore === -1 && data?.suggestedQuestion) {
+        followUp.suggestedQuestion = data.suggestedQuestion;
+      } else if (type === 'Chart') {
+        followUp.chart = data;
+      } else if (type === 'Mermaid') {
+        followUp.mermaid = data;
+      } else if (type === 'FlipCard') {
+        followUp.flipCard = data;
+      } else if (type === 'Keynote') {
+        followUp.keynotes = data;
+      }
+    } catch {
+      // skip malformed artifact
+    }
+  }
+  return Object.keys(followUp).length > 0 ? followUp : undefined;
+}
+
 interface ChatContextType {
   sessions: ChatSession[];
   isGenerating: Record<string, boolean>;
@@ -82,7 +111,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: m.id,
         role: m.role === 0 ? 'user' : 'assistant',
         content: m.content,
-        timestamp: new Date(m.createdAt)
+        timestamp: new Date(m.createdAt),
+        followUp: artifactsToFollowUp(m.artifacts)
       }));
       setSessions(prev => prev.map(s => s.id === sessionId ? {
         ...s,
@@ -107,7 +137,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     id: m.id,
                     role: m.role === 0 ? 'user' : 'assistant',
                     content: m.content,
-                    timestamp: new Date(m.createdAt)
+                    timestamp: new Date(m.createdAt),
+                    followUp: artifactsToFollowUp(m.artifacts)
                 })),
                 lastUpdated: new Date()
             };
@@ -159,6 +190,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       let assistantContent = '';
       let assistantReasoning = '';
+      let finishedMessageId = assistantMessageId; // fallback to local uuid
 
       await apiService.sendMessage(
         sessionId,
@@ -179,7 +211,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
            setReasoning(prev => ({ ...prev, [sessionId]: assistantReasoning }));
         },
         (messageId) => {
-           // Finished streaming
+           // Capture the real backend messageId for artifact persistence
+           finishedMessageId = messageId;
         },
         (error) => {
            throw new Error(error);
@@ -190,7 +223,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!stopRefs.current[sessionId] && assistantContent) {
         setIsFollowUpGenerating(prev => ({ ...prev, [sessionId]: true }));
         try {
-          await apiService.getFollowUp(assistantContent, (followUp) => {
+          await apiService.getFollowUp(assistantContent, finishedMessageId, (followUp) => {
             if (followUp) {
                 setSessions(prev => prev.map(s => s.id === sessionId ? {
                     ...s,

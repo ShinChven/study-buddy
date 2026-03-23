@@ -128,14 +128,14 @@ class ApiService {
         return res.json();
     }
 
-    async getFollowUp(assistantContent: string, onResult: (followUp: any) => void) {
+    async getFollowUp(assistantContent: string, messageId: string, onResult: (followUp: any) => void) {
         try {
             await this.startConnection();
             this.connection?.on("ReceiveFollowUp", (json) => {
                 this.connection?.off("ReceiveFollowUp");
                 onResult(JSON.parse(json));
             });
-            await this.connection?.invoke("GetFollowUp", assistantContent);
+            await this.connection?.invoke("GetFollowUp", assistantContent, messageId);
         } catch (err) {
             console.error("Failed to get follow up", err);
         }
