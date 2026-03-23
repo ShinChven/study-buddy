@@ -27,15 +27,17 @@ export const getSessions = (): ChatSession[] => {
   if (!sessionsJson) return [];
   try {
     const sessions = JSON.parse(sessionsJson);
-    // Convert string dates back to Date objects
-    return sessions.map((s: any) => ({
-      ...s,
-      lastUpdated: new Date(s.lastUpdated),
-      messages: s.messages.map((m: any) => ({
-        ...m,
-        timestamp: new Date(m.timestamp)
+    // Convert string dates back to Date objects and sort by lastUpdated descending
+    return sessions
+      .map((s: any) => ({
+        ...s,
+        lastUpdated: new Date(s.lastUpdated),
+        messages: s.messages.map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp)
+        }))
       }))
-    }));
+      .sort((a: ChatSession, b: ChatSession) => b.lastUpdated.getTime() - a.lastUpdated.getTime());
   } catch (error) {
     console.error('Error parsing sessions from localStorage:', error);
     return [];
