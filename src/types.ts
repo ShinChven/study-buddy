@@ -26,10 +26,19 @@ export interface FollowUpSettings {
   threshold: number;
 }
 
+export interface FlipCard {
+  title: string;
+  knowledge: string;
+  question: string;
+  options: string[];
+  correctAnswerIndex: number;
+}
+
 export interface FollowUp {
   chart?: ChartConfig;
   mermaid?: MermaidConfig;
   suggestedQuestion?: string;
+  flipCard?: FlipCard;
 }
 
 export interface Message {

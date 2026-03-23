@@ -22,17 +22,7 @@ export const FollowUpSection: React.FC<FollowUpSectionProps> = ({ followUp, onQu
     if (isChartOpen && chartRef.current) {
       // Small delay to allow the expansion animation to start/layout to stabilize
       setTimeout(() => {
-        const container = chartRef.current?.closest('.overflow-y-auto');
-        if (container && chartRef.current) {
-          const rect = chartRef.current.getBoundingClientRect();
-          const containerRect = container.getBoundingClientRect();
-          const relativeTop = rect.top - containerRect.top + container.scrollTop;
-          
-          container.scrollTo({
-            top: relativeTop - 20, // 20px padding from top
-            behavior: 'smooth'
-          });
-        }
+        chartRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }, 150);
     }
   }, [isChartOpen]);
@@ -40,17 +30,7 @@ export const FollowUpSection: React.FC<FollowUpSectionProps> = ({ followUp, onQu
   useEffect(() => {
     if (isMermaidOpen && mermaidRef.current) {
       setTimeout(() => {
-        const container = mermaidRef.current?.closest('.overflow-y-auto');
-        if (container && mermaidRef.current) {
-          const rect = mermaidRef.current.getBoundingClientRect();
-          const containerRect = container.getBoundingClientRect();
-          const relativeTop = rect.top - containerRect.top + container.scrollTop;
-          
-          container.scrollTo({
-            top: relativeTop - 20,
-            behavior: 'smooth'
-          });
-        }
+        mermaidRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }, 150);
     }
   }, [isMermaidOpen]);

@@ -6,9 +6,10 @@ import { Message, FollowUpSettings } from '../types';
 interface ArtifactPanelProps {
   messages: Message[];
   settings: FollowUpSettings;
+  onTakeTest: () => void;
 }
 
-export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({ messages, settings }) => {
+export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({ messages, settings, onTakeTest }) => {
   const artifacts = messages.filter(m => {
     if (!m.followUp) return false;
     
@@ -17,6 +18,10 @@ export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({ messages, settings
     
     return hasValidChart || hasValidMermaid;
   });
+
+  const flipCards = messages
+    .filter(m => m.followUp?.flipCard)
+    .map(m => m.followUp!.flipCard!);
 
   return (
     <div className="w-80 h-full bg-white border-l border-slate-100 p-6 flex flex-col gap-8 overflow-y-auto">
@@ -76,15 +81,49 @@ export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({ messages, settings
       </section>
 
       <section className="mt-auto">
-        <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-4">
-          <div className="bg-emerald-500 text-white p-2 rounded-xl">
-            <Trophy size={20} />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Achievements</p>
-            <p className="text-sm font-semibold text-emerald-800">Visual Learner I</p>
-          </div>
+        <div className="flex items-center gap-2 text-indigo-600 font-bold mb-4">
+          <BookOpen size={20} />
+          <h2>Flip Cards</h2>
         </div>
+        
+        {flipCards.length > 0 ? (
+          <div className="space-y-4">
+            <div className="relative h-32 w-full perspective-1000">
+              {flipCards.slice(-3).map((card, idx, arr) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ 
+                    opacity: 1 - (arr.length - 1 - idx) * 0.2, 
+                    y: (arr.length - 1 - idx) * -8,
+                    scale: 1 - (arr.length - 1 - idx) * 0.05,
+                    zIndex: idx
+                  }}
+                  className="absolute inset-0 bg-white border border-indigo-100 rounded-2xl p-4 shadow-sm flex flex-col justify-center"
+                >
+                  <h3 className="font-bold text-indigo-900 text-sm line-clamp-1">{card.title}</h3>
+                  <p className="text-xs text-slate-600 mt-1 line-clamp-2">{card.knowledge}</p>
+                </motion.div>
+              ))}
+            </div>
+            
+            <div className="flex items-center justify-between text-sm text-slate-500 px-1">
+              <span>{flipCards.length} cards collected</span>
+            </div>
+
+            <button 
+              onClick={onTakeTest}
+              className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
+            >
+              <Trophy size={18} />
+              Take Knowledge Test
+            </button>
+          </div>
+        ) : (
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+            <p className="text-xs text-slate-500 italic">Chat to collect flip cards for testing!</p>
+          </div>
+        )}
       </section>
     </div>
   );

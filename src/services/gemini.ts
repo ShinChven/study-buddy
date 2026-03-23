@@ -115,11 +115,19 @@ export async function generateFollowUp(assistantText: string): Promise<FollowUp 
   
   3. SUGGESTED QUESTION: Based on this answer, generate ONE follow-up question that inspires deep thinking.
   
+  4. FLIP CARD: Create a flashcard representing a key concept from the text. This will be used for a test later.
+     - title: The core concept or topic (short).
+     - knowledge: A concise summary of the key fact or definition.
+     - question: A multiple-choice question testing this knowledge.
+     - options: An array of exactly 4 string options.
+     - correctAnswerIndex: The index (0-3) of the correct option.
+  
   Return a JSON object:
   {
     "chart": { "type": "bar" | "line" | "pie", "title": string, "data": Array<{ "label": string, "value": number }>, "xAxisLabel"?: string, "yAxisLabel"?: string } | null,
     "mermaid": { "code": string, "title": string } | null,
-    "suggestedQuestion": string
+    "suggestedQuestion": string,
+    "flipCard": { "title": string, "knowledge": string, "question": string, "options": string[], "correctAnswerIndex": number } | null
   }
   
   Titles for charts and mermaid diagrams should be professional and descriptive.`;

@@ -3,20 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatWindow } from './components/ChatWindow';
 import { ArtifactPanel } from './components/ArtifactPanel';
+import { TestPage } from './components/TestPage';
 import { Message, ChatSession, ChartConfig, FollowUpSettings } from './types';
 import { chatWithGeminiStream, generateFollowUp } from './services/gemini';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
-  const [sessions, setSessions] = React.useState<ChatSession[]>([]);
-  const [activeSessionId, setActiveSessionId] = React.useState<string>('');
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [isGeneratingFollowUp, setIsGeneratingFollowUp] = React.useState(false);
-  const [followUpSettings, setFollowUpSettings] = React.useState<FollowUpSettings>({
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingFollowUp, setIsGeneratingFollowUp] = useState(false);
+  const [isTestMode, setIsTestMode] = useState(false);
+  const [followUpSettings, setFollowUpSettings] = useState<FollowUpSettings>({
     debugMode: false,
     showSkipped: true,
     threshold: 7,
@@ -198,7 +200,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-50 font-sans text-slate-900 overflow-hidden">
+    <div className="flex h-full w-full bg-slate-50 font-sans text-slate-900 overflow-hidden">
       <Sidebar 
         sessions={sessions} 
         activeSessionId={activeSessionId} 
@@ -231,7 +233,15 @@ export default function App() {
       <ArtifactPanel 
         messages={activeSession?.messages || []} 
         settings={followUpSettings}
+        onTakeTest={() => setIsTestMode(true)}
       />
+
+      {isTestMode && (
+        <TestPage 
+          messages={activeSession?.messages || []} 
+          onClose={() => setIsTestMode(false)}
+        />
+      )}
     </div>
   );
 }

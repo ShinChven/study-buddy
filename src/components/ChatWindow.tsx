@@ -23,7 +23,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
   const [thinkingStep, setThinkingStep] = React.useState(0);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const lastMessageRef = React.useRef<HTMLDivElement>(null);
-  const prevMessagesRef = React.useRef<Message[]>([]);
+  const lastScrolledMessageIdRef = React.useRef<string | null>(null);
 
   const thinkingMessages = [
     "EduBuddy is analyzing your request...",
@@ -46,26 +46,38 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
   }, [isLoading]);
 
   React.useEffect(() => {
-    if (messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      const prevLastMessage = prevMessagesRef.current[prevMessagesRef.current.length - 1];
+    if (messages.length === 0) return;
+    
+    // Find the most recent user message
+    const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+    
+    // Only trigger scroll for new user messages
+    if (lastUserMessage && lastScrolledMessageIdRef.current !== lastUserMessage.id) {
+      lastScrolledMessageIdRef.current = lastUserMessage.id;
       
-      // Check if the only change is the addition of followUp
-      const isFollowUpAdded = prevLastMessage && 
-                              prevLastMessage.id === lastMessage.id && 
-                              !prevLastMessage.followUp && 
-                              lastMessage.followUp;
-
-      if (!isFollowUpAdded) {
-        if (lastMessage.role === 'assistant' && lastMessageRef.current) {
-          lastMessageRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (scrollRef.current) {
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      // Use a small timeout to ensure the DOM has updated with the new message
+      setTimeout(() => {
+        const targetElement = document.getElementById(`message-${lastUserMessage.id}`);
+        const container = scrollRef.current;
+        
+        if (targetElement && container) {
+          const rect = targetElement.getBoundingClientRect();
+          const containerRect = container.getBoundingClientRect();
+          // Calculate the position relative to the container's current scroll
+          const relativeTop = rect.top - containerRect.top + container.scrollTop;
+          
+          container.scrollTo({
+            top: relativeTop - 20, // 20px padding from the top
+            behavior: 'smooth'
+          });
         }
-      }
+      }, 100);
     }
-    prevMessagesRef.current = messages;
   }, [messages]);
+
+  const handleQuestionClick = (q: string) => {
+    onSendMessage(q);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +91,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
     <div className="flex flex-col h-full bg-slate-50">
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-6 scroll-smooth"
+        className="flex-1 overflow-y-auto p-4 pb-[50vh] space-y-6"
       >
         <AnimatePresence initial={false}>
           {messages.map((msg, idx) => {
@@ -89,6 +101,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
             return (
             <motion.div
               key={msg.id}
+              id={`message-${msg.id}`}
               ref={idx === messages.length - 1 ? lastMessageRef : null}
               initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -131,7 +144,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
                     <div className="mt-2">
                       <FollowUpSection 
                         followUp={msg.followUp} 
-                        onQuestionClick={onSendMessage} 
+                        onQuestionClick={handleQuestionClick} 
                         settings={followUpSettings}
                       />
                     </div>
@@ -153,6 +166,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
         </AnimatePresence>
         {isLoading && messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.content && (
           <motion.div 
+            id="thinking-indicator"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="flex justify-start"
