@@ -40,8 +40,9 @@ export const ChatPage: React.FC = () => {
       const session = getSessionById(conversation_id);
       if (session) {
         setActiveSession(session);
-        // If the session only has one message (from user, via /study/new), start generation
-        if (session.messages.length === 1 && session.messages[0].role === 'user') {
+        // Start generation if the last message is from user (e.g. new chat or branched chat)
+        const lastMessage = session.messages[session.messages.length - 1];
+        if (lastMessage && lastMessage.role === 'user' && !isLoading) {
           handleAutoRespond(session);
         }
       } else {
@@ -54,7 +55,10 @@ export const ChatPage: React.FC = () => {
 
   const handleAutoRespond = useCallback(async (session: ChatSession) => {
     if (isLoading) return;
-    await handleSendMessage(session.messages[0].content, true, session);
+    const lastUserMessage = [...session.messages].reverse().find(m => m.role === 'user');
+    if (lastUserMessage) {
+      await handleSendMessage(lastUserMessage.content, true, session);
+    }
   }, [isLoading]);
 
   const handleStopGeneration = () => {
@@ -67,6 +71,36 @@ export const ChatPage: React.FC = () => {
     if (activeSession?.id === id) {
       navigate('/study/new');
     }
+  };
+
+  const handleEditMessage = async (messageId: string, newContent: string) => {
+    if (!activeSession) return;
+
+    const messageIndex = activeSession.messages.findIndex(m => m.id === messageId);
+    if (messageIndex === -1) return;
+
+    // Branch: take messages up to the edited one
+    const slicedMessages = activeSession.messages.slice(0, messageIndex + 1);
+    
+    // Update the edited message content and clear follow-ups
+    const editedMessage = { 
+      ...slicedMessages[slicedMessages.length - 1], 
+      content: newContent,
+      followUp: undefined 
+    };
+    slicedMessages[slicedMessages.length - 1] = editedMessage;
+
+    const newSessionId = uuidv4();
+    const newSession: ChatSession = {
+      id: newSessionId,
+      title: messageIndex === 0 ? newContent.slice(0, 30) + '...' : activeSession.title,
+      messages: slicedMessages,
+      lastUpdated: new Date()
+    };
+
+    updateSession(newSession);
+    setSessions(getSessions());
+    navigate(`/study/${newSessionId}`);
   };
 
   const handleSendMessage = async (content: string, isAuto = false, sessionOverride?: ChatSession) => {
@@ -224,6 +258,7 @@ export const ChatPage: React.FC = () => {
           <ChatWindow 
             messages={activeSession?.messages || []} 
             onSendMessage={(c) => handleSendMessage(c)}
+            onEditMessage={handleEditMessage}
             isLoading={isLoading}
             isGeneratingFollowUp={isGeneratingFollowUp}
             followUpSettings={followUpSettings}

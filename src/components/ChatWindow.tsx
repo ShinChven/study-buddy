@@ -2,7 +2,7 @@ import React, { memo, useRef, useState, useEffect } from 'react';
 import { Message, ChartConfig, FollowUpSettings } from '../types';
 import { FollowUpSection } from './FollowUpSection';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, User, Bot, Sparkles } from 'lucide-react';
+import { Send, User, Bot, Sparkles, Pencil, Check, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -12,6 +12,7 @@ import 'katex/dist/katex.min.css';
 interface ChatWindowProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
+  onEditMessage: (messageId: string, newContent: string) => void;
   isLoading: boolean;
   isGeneratingFollowUp?: boolean;
   followUpSettings: FollowUpSettings;
@@ -101,8 +102,10 @@ const ChatInput = memo(({
 
 ChatInput.displayName = 'ChatInput';
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage, isLoading, isGeneratingFollowUp, followUpSettings, onStopGeneration }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage, onEditMessage, isLoading, isGeneratingFollowUp, followUpSettings, onStopGeneration }) => {
   const [thinkingStep, setThinkingStep] = React.useState(0);
+  const [editingMessageId, setEditingMessageId] = React.useState<string | null>(null);
+  const [editContent, setEditContent] = React.useState('');
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const lastMessageRef = React.useRef<HTMLDivElement>(null);
   const lastScrolledMessageIdRef = React.useRef<string | null>(null);
@@ -161,6 +164,24 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
     onSendMessage(q);
   };
 
+  const handleStartEdit = (msg: Message) => {
+    setEditingMessageId(msg.id);
+    setEditContent(msg.content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditContent('');
+  };
+
+  const handleSaveEdit = (messageId: string) => {
+    if (editContent.trim() && editContent !== messages.find(m => m.id === messageId)?.content) {
+      onEditMessage(messageId, editContent);
+    }
+    setEditingMessageId(null);
+    setEditContent('');
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950">
       <div 
@@ -198,23 +219,61 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
                   />
                 </div>
                 <div className="flex flex-col gap-2 w-full">
-                  <div className={`p-4 rounded-2xl shadow-sm ${
+                  <div className={`p-4 rounded-2xl shadow-sm group relative ${
                     msg.role === 'user' 
                       ? 'bg-accent-600 text-white rounded-tr-none' 
                       : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-tl-none border border-slate-100 dark:border-slate-800'
                   }`}>
-                    <div className={`prose max-w-none prose-sm ${
-                      msg.role === 'user' 
-                        ? 'prose-invert prose-p:text-white prose-headings:text-white prose-strong:text-white prose-ul:text-white prose-ol:text-white prose-li:text-white' 
-                        : 'prose-slate dark:prose-invert prose-p:leading-relaxed prose-headings:font-display prose-headings:font-semibold prose-h1:text-accent-900 dark:prose-h1:text-accent-400 prose-h2:text-accent-800 dark:prose-h2:text-accent-300 prose-h3:text-slate-800 dark:prose-h3:text-slate-100 prose-a:text-accent-600 dark:prose-a:text-accent-400 hover:prose-a:text-accent-500 prose-strong:text-accent-900 dark:prose-strong:text-accent-400 prose-code:text-accent-600 dark:prose-code:text-accent-400 prose-code:bg-accent-50 dark:prose-code:bg-accent-900/30 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-img:rounded-xl prose-hr:border-slate-200 dark:prose-hr:border-slate-700 prose-ul:list-disc prose-ul:pl-5 prose-ol:list-decimal prose-ol:pl-5 prose-li:my-1'
-                    }`}>
-                      <ReactMarkdown 
-                        remarkPlugins={[remarkGfm, remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
-                      >
-                        {msg.content}
-                      </ReactMarkdown>
-                    </div>
+                    {msg.role === 'user' && editingMessageId === msg.id ? (
+                      <div className="space-y-3">
+                        <textarea
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          className="w-full bg-accent-700 text-white border border-accent-500 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-white/50 resize-none min-h-[80px]"
+                          autoFocus
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={handleCancelEdit}
+                            className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                            title="Cancel"
+                          >
+                            <X size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleSaveEdit(msg.id)}
+                            className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                            title="Save and Resend"
+                          >
+                            <Check size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className={`prose max-w-none prose-sm ${
+                          msg.role === 'user' 
+                            ? 'prose-invert prose-p:text-white prose-headings:text-white prose-strong:text-white prose-ul:text-white prose-ol:text-white prose-li:text-white' 
+                            : 'prose-slate dark:prose-invert prose-p:leading-relaxed prose-headings:font-display prose-headings:font-semibold prose-h1:text-accent-900 dark:prose-h1:text-accent-400 prose-h2:text-accent-800 dark:prose-h2:text-accent-300 prose-h3:text-slate-800 dark:prose-h3:text-slate-100 prose-a:text-accent-600 dark:prose-a:text-accent-400 hover:prose-a:text-accent-500 prose-strong:text-accent-900 dark:prose-strong:text-accent-400 prose-code:text-accent-600 dark:prose-code:text-accent-400 prose-code:bg-accent-50 dark:prose-code:bg-accent-900/30 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-img:rounded-xl prose-hr:border-slate-200 dark:prose-hr:border-slate-700 prose-ul:list-disc prose-ul:pl-5 prose-ol:list-decimal prose-ol:pl-5 prose-li:my-1'
+                        }`}>
+                          <ReactMarkdown 
+                            remarkPlugins={[remarkGfm, remarkMath]}
+                            rehypePlugins={[rehypeKatex]}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
+                        {msg.role === 'user' && !isLoading && (
+                          <button
+                            onClick={() => handleStartEdit(msg)}
+                            className="absolute -left-10 top-2 opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-900/20 rounded-xl transition-all"
+                            title="Edit message"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                        )}
+                      </>
+                    )}
                   </div>
                   {msg.followUp && (
                     <div className="mt-2">
