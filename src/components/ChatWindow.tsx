@@ -202,7 +202,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
               animate={{ opacity: 1, x: 0 }}
               className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`flex max-w-[95%] md:max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start gap-2 md:gap-3`}>
+              <div className={`flex w-full max-w-[95%] md:max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start gap-2 md:gap-3 min-w-0`}>
                 <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden border-2 ${
                   msg.role === 'user' 
                     ? 'bg-accent-50 dark:bg-accent-900/20 border-accent-100 dark:border-accent-900/30' 
@@ -218,8 +218,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
                     referrerPolicy="no-referrer"
                   />
                 </div>
-                <div className="flex flex-col gap-2 flex-1 min-w-0">
-                  <div className={`p-3 md:p-4 rounded-2xl shadow-sm group relative ${
+                <div className="flex flex-col gap-2 flex-1 min-w-0 w-full">
+                  <div className={`p-3 md:p-4 rounded-2xl shadow-sm group relative w-full overflow-hidden ${
                     msg.role === 'user' 
                       ? 'bg-accent-600 text-white rounded-tr-none ml-auto' 
                       : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-tl-none border border-slate-100 dark:border-slate-800 mr-auto'
@@ -251,7 +251,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
                       </div>
                     ) : (
                       <>
-                        <div className={`prose max-w-none prose-sm md:prose-base ${
+                        <div className={`prose max-w-none w-full min-w-0 prose-sm md:prose-base ${
                           msg.role === 'user' 
                             ? 'prose-invert prose-p:text-white prose-headings:text-white prose-strong:text-white prose-ul:text-white prose-ol:text-white prose-li:text-white break-words overflow-hidden' 
                             : 'prose-slate dark:prose-invert prose-p:leading-relaxed prose-headings:font-display prose-headings:font-semibold prose-h1:text-accent-900 dark:prose-h1:text-accent-400 prose-h2:text-accent-800 dark:prose-h2:text-accent-300 prose-h3:text-slate-800 dark:prose-h3:text-slate-100 prose-a:text-accent-600 dark:prose-a:text-accent-400 hover:prose-a:text-accent-500 prose-strong:text-accent-900 dark:prose-strong:text-accent-400 prose-code:text-accent-600 dark:prose-code:text-accent-400 prose-code:bg-accent-50 dark:prose-code:bg-accent-900/30 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-img:rounded-xl prose-hr:border-slate-200 dark:prose-hr:border-slate-700 prose-ul:list-disc prose-ul:pl-4 md:prose-ul:pl-5 prose-ol:list-decimal prose-ol:pl-4 md:prose-ol:pl-5 prose-li:my-1 break-words overflow-hidden'
@@ -259,6 +259,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage,
                           <ReactMarkdown 
                             remarkPlugins={[remarkGfm, remarkMath]}
                             rehypePlugins={[rehypeKatex]}
+                            components={{
+                              table: ({node, ...props}) => (
+                                <div className="overflow-x-auto w-full max-w-full my-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                                  <table {...props} className="min-w-full divide-y divide-slate-200 dark:divide-slate-700" />
+                                </div>
+                              ),
+                              th: ({node, ...props}) => <th {...props} className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider" />,
+                              td: ({node, ...props}) => <td {...props} className="px-4 py-2 text-sm border-t border-slate-100 dark:border-slate-800" />
+                            }}
                           >
                             {msg.content}
                           </ReactMarkdown>
